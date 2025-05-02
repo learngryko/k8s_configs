@@ -1,0 +1,4 @@
+# combined/kustomization.yaml
+resources:
+  - ../native
+  - ../non-native

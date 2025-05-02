@@ -1,0 +1,4 @@
+# native/kustomization.yaml
+resources:
+  - ../base
+  - psa.yaml

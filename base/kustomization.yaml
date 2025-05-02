@@ -1,0 +1,4 @@
+# base/kustomization.yaml
+resources:
+  - rbac.yaml
+  - network-policy.yaml

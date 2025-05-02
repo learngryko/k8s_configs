@@ -1,0 +1,5 @@
+# non-native/kustomization.yaml
+resources:
+  - ../base
+  - trivy-install.yaml
+  - falco-install.yaml
