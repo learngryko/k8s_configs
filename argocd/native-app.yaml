@@ -7,8 +7,8 @@ metadata:
 spec:
   project: security-project
   source:
-    repoURL: https://your.git.repo
-    targetRevision: HEAD
+    repoURL: https://github.com/learngryko/k8s_configs
+    targetRevision: main
     path: native
   destination:
     server: https://kubernetes.default.svc
