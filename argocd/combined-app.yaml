@@ -5,7 +5,7 @@ metadata:
   name: k8s-full-security
   namespace: argocd
 spec:
-  project: default
+  project: security-project
   source:
     repoURL: https://your.git.repo
     targetRevision: HEAD
