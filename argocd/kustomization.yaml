@@ -1,0 +1,4 @@
+resources:
+  - apps/base.yaml
+  - apps/full-security-app.yaml
+  - apps/native-only-app.yaml
