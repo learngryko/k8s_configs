@@ -1,0 +1,6 @@
+resources:
+  - ../../base
+patchesStrategicMerge:
+  - namespace-patches/prod.yaml
+  - namespace-patches/dev.yaml
+  - namespace-patches/monitoring.yaml

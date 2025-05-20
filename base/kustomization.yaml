@@ -1,4 +1,4 @@
-# base/kustomization.yaml
 resources:
-  - rbac.yaml
-  - network-policy.yaml
+  - namespaces/prod.yaml
+  - namespaces/dev.yaml
+  - namespaces/monitoring.yaml

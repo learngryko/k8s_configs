@@ -1,0 +1,3 @@
+resources:
+  - ../native-only
+# future additions: gatekeeper, falco, trivy, networkpolicy, etc

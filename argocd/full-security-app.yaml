@@ -1,15 +1,14 @@
-# argocd/combined-app.yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   name: k8s-full-security
   namespace: argocd
 spec:
-  project: security-project
+  project: default
   source:
     repoURL: https://github.com/learngryko/k8s_configs
     targetRevision: main
-    path: combined
+    path: overlays/full-security
   destination:
     server: https://kubernetes.default.svc
     namespace: default
