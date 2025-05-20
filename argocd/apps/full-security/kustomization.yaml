@@ -1,17 +1,17 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: security-root
+  name: full-security
   namespace: argocd
 spec:
   project: security-project
   source:
     repoURL: https://github.com/learngryko/k8s_configs
     targetRevision: main
-    path: argocd/apps
+    path: overlays/full-security
   destination:
     server: https://kubernetes.default.svc
-    namespace: argocd
+    namespace: default
   syncPolicy:
     automated:
       prune: true
