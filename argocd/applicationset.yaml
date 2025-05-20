@@ -9,8 +9,7 @@ spec:
         repoURL: https://github.com/learngryko/k8s_configs
         revision: main
         directories:
-          - path: argocd/apps
-            recurse: true
+          - path: argocd/apps/enabled/*
   template:
     metadata:
       name: '{{path.basename}}'
