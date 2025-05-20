@@ -1,2 +1,2 @@
 resources:
-  - ../../overlays/full-security
+  - ../../../overlays/full-security
