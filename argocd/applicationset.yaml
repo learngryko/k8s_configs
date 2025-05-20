@@ -10,6 +10,7 @@ spec:
         revision: main
         directories:
           - path: argocd/apps/*
+            exclude: ["*/disabled-*"]  # ← optional, for folder disables
   template:
     metadata:
       name: '{{path.basename}}'
