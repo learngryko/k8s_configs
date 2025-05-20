@@ -1,6 +1,5 @@
 resources:
   - ../project.yaml
-  - apps/base.yaml
-  - apps/full-security-app.yaml
-  - apps/native-only-app.yaml
-  
+  - base.yaml
+  - full-security-app.yaml
+  - native-only-app.yaml
