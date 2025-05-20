@@ -1,0 +1,18 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: native-only
+  namespace: argocd
+spec:
+  project: security-project
+  source:
+    repoURL: https://github.com/learngryko/k8s_configs
+    targetRevision: main
+    path: overlays/native-only
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: default
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

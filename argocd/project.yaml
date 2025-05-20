@@ -1,0 +1,17 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: security-project
+  namespace: argocd
+spec:
+  description: "All security-related overlays"
+  sourceRepos:
+    - https://github.com/learngryko/k8s_configs
+  destinations:
+    - namespace: '*'
+      server: https://kubernetes.default.svc
+  clusterResourceWhitelist:
+    - group: '*'
+      kind: '*'
+  orphanedResources:
+    warn: true
