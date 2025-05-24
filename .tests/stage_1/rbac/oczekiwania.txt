@@ -1,0 +1,9 @@
+Oczekiwane wyniki:
+
+User	        Akcja	        Rezultat
+user-viewer	    get pods	    ✅
+user-viewer	    delete pods	    ❌ Forbidden
+user-dev	    get secrets	    ✅
+user-dev	    exec do poda    ❌ (brak pods/exec)
+user-ops	    wszystko	    ✅
+
