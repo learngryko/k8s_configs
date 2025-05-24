@@ -18,9 +18,9 @@ resources:
   - rbac/monitoring/bindings.yaml
 
   # Networkpolicy
-  - networkpolicy/dev/
-  - networkpolicy/prod/
-  - networkpolicy/monitoring/
+  - networkpolicy/dev
+  - networkpolicy/prod
+  - networkpolicy/monitoring
 
 patchesStrategicMerge:
   - namespace-patches/prod.yaml
