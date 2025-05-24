@@ -17,6 +17,11 @@ resources:
   - rbac/monitoring/role-ops.yaml
   - rbac/monitoring/bindings.yaml
 
+  # Networkpolicy
+  - networkpolicy/dev/
+  - networkpolicy/prod/
+  - networkpolicy/monitoring/
+
 patchesStrategicMerge:
   - namespace-patches/prod.yaml
   - namespace-patches/dev.yaml
