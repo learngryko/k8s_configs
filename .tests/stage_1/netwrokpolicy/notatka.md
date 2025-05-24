@@ -1,29 +1,42 @@
-# 🛡️ NetworkPolicy – Notatka wdrożeniowa (wersja folderowa, label: native-security)
+
+# 🛡️ NetworkPolicy – Notatka wdrożeniowa  
+*wersja folderowa, label: `native-security`*
+
+---
+
+## ❗️ Wymagania krytyczne  
+> **UWAGA:**  
+> Polityki NetworkPolicy w Kubernetes **NIE DZIAŁAJĄ bez zainstalowanego CNI obsługującego policy**, np. Calico, Cilium, Antrea.  
+> Sam “czysty” klaster (np. z kube-proxy/flannel bez policy) *ignoruje* te polityki – sieć pozostaje otwarta!  
+>  
+> **Aby wyegzekwować polityki sieciowe, MUSISZ zainstalować Calico lub podobny plugin!**
+
+---
 
 ## 🎯 Cel  
-Wdrożyć politykę sieciową, która:
-- Domyślnie blokuje cały ruch między podami (zero trust).
-- Pozwala tylko niezbędne wyjątki (DNS, monitoring, ingress, ArgoCD itp.).
-- Zgodna z obecnym podziałem namespace (`dev`, `prod`, `monitoring`).
-- Zgodna z overlay `native-only`.
+
+- Zbudować “zero trust” – blokować ruch domyślnie wszędzie (ingress/egress), otwierać tylko to, co konieczne.
+- Trzymać całość NetworkPolicy w czytelnych folderach, per-namespace.
+- W overlay `native-only` **aktywować wyłącznie to, co jest zadeklarowane w plikach YAML (nie używać custom resource'ów Calico!)** – masz kontrolę tylko przez NetworkPolicy K8s.
+- Overlay `full-security` może zawierać dodatkowe reguły (np. globalne, zaawansowane CRD Calico itd.).
 
 ---
 
 ## 📐 Założenia
 
-- `dev`, `prod`, `monitoring` to osobne namespace’y.
-- Monitoring centralny (`monitoring`), aplikacje z `dev` i `prod` mogą być scrapowane przez Prometheusa/Loki.
-- Aplikacje w `dev` i `prod` mogą wysyłać dane do `monitoring` (jeśli potrzebujesz).
-- Każdy namespace:
-  - polityka deny all (ingress+egress)
+- Namespace: `dev`, `prod`, `monitoring`
+- Monitoring scentralizowany (Prometheus/Loki/… w `monitoring`)
+- Ruch cross-namespace: tylko tam, gdzie NetworkPolicy na to pozwala
+- **Każdy namespace**:
+  - polityka deny-all (ingress+egress)
   - wyjątek DNS
-  - wyjątek na monitoring
-  - opcjonalnie egress do monitoring
-  - ewentualne inne wyjątki (ArgoCD, ingress)
+  - wyjątek monitoring
+  - opcjonalnie egress na monitoring (np. do pushowania logów)
+  - dodatkowe wyjątki (np. ArgoCD, ingress) jeśli trzeba
 
 ---
 
-## 📁 Struktura repo (per-namespace!)
+## 📁 Struktura repozytorium (każdy ns = osobny folder)
 
 ```
 k8s_configs/
@@ -39,24 +52,25 @@ k8s_configs/
             │   ├── default-deny.yaml
             │   ├── allow-dns.yaml
             │   ├── allow-monitoring.yaml
-            │   └── allow-egress-to-monitoring.yaml # jeśli potrzebujesz z prod do monitoring
+            │   └── allow-egress-to-monitoring.yaml # jeśli potrzebujesz
             └── monitoring/
                 ├── default-deny.yaml
                 ├── allow-dns.yaml
-                └── allow-monitoring.yaml
+                └── allow-monitoring.yaml # jeśli potrzebujesz
 ```
 
 ---
 
-## 🧩 Pliki `.yaml` (przykład: dev)
+## 🧩 Przykładowe pliki `.yaml` (na przykładzie `dev`)
 
-**Wszystkie pliki mają label:**
+Wszystkie pliki mają labele:
+
 ```yaml
 metadata:
   labels:
     app.kubernetes.io/managed-by: argocd
     app.kubernetes.io/component: networkpolicy
-    app.kubernetes.io/name: networkpolicy-<ns>
+    app.kubernetes.io/name: networkpolicy-dev
     app.kubernetes.io/part-of: native-security
 ```
 
@@ -137,7 +151,7 @@ spec:
 
 ---
 
-### `allow-egress-to-monitoring.yaml` *(jeśli potrzebujesz push z dev/prod do monitoring, np. Loki)*
+### `allow-egress-to-monitoring.yaml` *(opcjonalnie)*
 
 ```yaml
 apiVersion: networking.k8s.io/v1
@@ -163,26 +177,26 @@ spec:
 
 ---
 
-**Analogicznie dla prod/monitoring – tylko zmień `namespace:` i `networkpolicy-prod`/`networkpolicy-monitoring` w labelach.**
+Analogiczne pliki dla `prod`, `monitoring` — zmieniasz tylko namespace i nazwę.
 
 ---
 
 ## 🛠️ Kustomization.yaml
 
 W `overlays/native-only/kustomization.yaml`:
+
 ```yaml
 resources:
   - networkpolicy/dev/
   - networkpolicy/prod/
   - networkpolicy/monitoring/
 ```
-Dzięki temu ładuje wszystkie pliki per-namespace.
 
 ---
 
-## 🏷️ Labele na Namespace
+## 🏷️ Labele namespace
 
-W plikach Namespace (`base/namespaces/dev.yaml` itd.):
+W plikach Namespace (`base/namespaces/dev.yaml`):
 
 ```yaml
 apiVersion: v1
@@ -198,34 +212,44 @@ metadata:
 
 ## ✅ Kroki wdrożeniowe
 
-1. Utwórz foldery jak powyżej, każdy namespace osobno.
-2. Wklej YAML-e z odpowiednimi labelami.
+1. Utwórz strukturę folderów (per namespace).
+2. Wklej powyższe pliki z odpowiednimi labelami.
 3. Uzupełnij kustomization.yaml.
-4. Dodaj label do Namespace.
+4. Dodaj/uzupełnij labele do Namespace.
 5. Commit + push (ArgoCD zrobi resztę).
-6. Przetestuj connectivity (kubectl exec, ping, nslookup, monitoring, etc).
+6. Przetestuj connectivity testerem i poleceniami kubectl.
 
 ---
 
 ## 🧪 Testy
 
-- brak połączenia `podA → podB` w tym samym namespace = OK
-- `nslookup` działa = OK
-- `dev → monitoring` (np. Loki push) = OK
-- `monitoring → dev` oraz `monitoring → prod` (Prometheus scrape) = OK
+- Brak połączenia `podA → podB` w tym samym namespace (zero trust).
+- `nslookup` działa tylko tam, gdzie jest allow-dns.
+- `dev → monitoring` (Loki push) = OK, jeśli masz allow-egress-to-monitoring.
+- `monitoring → dev` oraz `monitoring → prod` (Prometheus scrape) = OK, jeśli masz allow-monitoring.
 
 ---
 
 ## 🧠 Dodatkowe uwagi
 
-- Jeśli ArgoCD działa w osobnym namespace – dodaj wyjątek.
-- Analogicznie dla ingress controller (np. nginx/istio).
-- Każdy namespace musi mieć label `name: <ns>`, żeby działał namespaceSelector.
+- Jeśli ArgoCD lub ingress działa w osobnym namespace, dodaj wyjątek.
+- Każdy namespace musi mieć label `name: <ns>`, żeby działały namespaceSelector.
+- Overlay “full-security” może mieć własne, dodatkowe polityki (np. custom resource Calico), ale overlay “native-only” korzysta wyłącznie z czystego NetworkPolicy.
 
 ---
 
-**TL;DR:**  
-Foldery per namespace, wszystkie YAML-e z labelami  
-`app.kubernetes.io/part-of: native-security`.  
-Kustomization na foldery, label na Namespace.  
-Pełny zero trust, tylko potrzebne wyjątki.  
+**PAMIĘTAJ:**
+> **NetworkPolicy NIE DZIAŁA bez Calico, Cilium, Antrea lub innego CNI obsługującego polityki!**
+> 
+> Po zainstalowaniu Calico polityki zaczną działać natychmiast, tylko w ramach tego co zadeklarujesz w YAML (overlay native-only = tylko K8s NetworkPolicy, bez custom CRD Calico).
+
+---
+
+## 🔁 Full-security vs native-only (quick summary)
+
+- **native-only**:  
+  - tylko standardowe NetworkPolicy K8s (to, co jest w plikach powyżej)
+  - działa tylko na CNI z obsługą policy (np. Calico, ale bez użycia zaawansowanych CRD)
+- **full-security**:  
+  - możesz dodać zaawansowane polityki, np. Calico GlobalNetworkPolicy, custom labels itd.
+  - możesz integrować OPA Gatekeeper, Falco, Trivy, itp.
