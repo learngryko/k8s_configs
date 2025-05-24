@@ -9,8 +9,12 @@ metadata:
 rules:
 - apiGroups: [""]
   resources: ["pods", "configmaps", "secrets"]
-  verbs: ["get", "list", "create", "update", "delete"]
-  
+  verbs: ["get", "list", "create", "update", "delete", "patch"] 
+
 - apiGroups: ["apps"]
   resources: ["deployments"]
+  verbs: ["get", "list", "create", "update", "delete"]
+
+- apiGroups: ["batch"]
+  resources: ["jobs"]
   verbs: ["get", "list", "create", "update", "delete"]
