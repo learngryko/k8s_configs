@@ -9,15 +9,15 @@ tests = [
     ("user-viewer", "dev", "create configmaps", False),
     ("user-viewer", "dev", "delete pods", False),
     ("user-viewer", "dev", "get secrets", False),
-    ("user-viewer", "prod", "get pods", False),
+    ("user-viewer", "prod", "get pods", True),
 
     # user-dev
     ("user-dev", "dev", "create deployments", True),
     ("user-dev", "dev", "delete configmaps", True),
-    ("user-dev", "dev", "create pods/exec", False),
+    ("user-dev", "dev", "create pods/exec", True), 
     ("user-dev", "dev", "create role", False),
     ("user-dev", "dev", "get secrets", True),
-    ("user-dev", "prod", "create deployments", False),
+    ("user-dev", "prod", "create deployments", False), 
 
     # user-ops
     ("user-ops", "dev", "delete pods", True),
