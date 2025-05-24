@@ -11,11 +11,9 @@ resources:
   - rbac/dev/role-ops.yaml
   - rbac/dev/bindings.yaml
   - rbac/prod/role-viewer.yaml
-  - rbac/prod/role-dev.yaml
   - rbac/prod/role-ops.yaml
   - rbac/prod/bindings.yaml
   - rbac/monitoring/role-viewer.yaml
-  - rbac/monitoring/role-dev.yaml
   - rbac/monitoring/role-ops.yaml
   - rbac/monitoring/bindings.yaml
 
