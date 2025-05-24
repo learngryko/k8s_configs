@@ -1,9 +1,10 @@
 resources:
   - ../../base
-patchesStrategicMerge:
+  #PSA
   - namespace-patches/prod.yaml
   - namespace-patches/dev.yaml
   - namespace-patches/monitoring.yaml
+  #RBAC
   - rbac/dev/role-viewer.yaml
   - rbac/dev/role-dev.yaml
   - rbac/dev/role-ops.yaml
@@ -16,3 +17,4 @@ patchesStrategicMerge:
   - rbac/monitoring/role-dev.yaml
   - rbac/monitoring/role-ops.yaml
   - rbac/monitoring/bindings.yaml
+
