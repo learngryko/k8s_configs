@@ -26,9 +26,10 @@ metadata:
 spec:
   containers:
     - name: test
-      image: busybox:1.35.0
+      image: alpine:3.18
       command: ["sleep", "3600"]
       securityContext:
+        runAsUser: 1000
         allowPrivilegeEscalation: false
         capabilities:
           drop: ["ALL"]
@@ -38,6 +39,7 @@ spec:
   securityContext:
     runAsNonRoot: true
 """
+
     # Zapisz do tymczasowego pliku
     with open(f"/tmp/{podname}.yaml", "w") as f:
         f.write(pod_yaml)
