@@ -1,0 +1,41 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: dev-viewer-binding
+  namespace: dev
+subjects:
+- kind: User
+  name: user-viewer
+  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: Role
+  name: viewer
+  apiGroup: rbac.authorization.k8s.io
+---
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: dev-dev-binding
+  namespace: dev
+subjects:
+- kind: User
+  name: user-dev
+  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: Role
+  name: dev
+  apiGroup: rbac.authorization.k8s.io
+---
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: dev-ops-binding
+  namespace: dev
+subjects:
+- kind: User
+  name: user-ops
+  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: Role
+  name: ops
+  apiGroup: rbac.authorization.k8s.io
