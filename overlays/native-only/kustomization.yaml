@@ -1,7 +1,11 @@
+commonLabels:
+  app.kubernetes.io/part-of: native-security
+  app.kubernetes.io/component: rbac
+
 resources:
   - ../../base
 
-  #RBAC
+  # RBAC – all roles/bindings
   - rbac/dev/role-viewer.yaml
   - rbac/dev/role-dev.yaml
   - rbac/dev/role-ops.yaml
@@ -14,9 +18,8 @@ resources:
   - rbac/monitoring/role-dev.yaml
   - rbac/monitoring/role-ops.yaml
   - rbac/monitoring/bindings.yaml
-  
+
 patchesStrategicMerge:
-  #PSA
   - namespace-patches/prod.yaml
   - namespace-patches/dev.yaml
   - namespace-patches/monitoring.yaml
