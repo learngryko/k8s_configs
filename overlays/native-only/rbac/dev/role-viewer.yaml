@@ -3,9 +3,9 @@ apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   namespace: dev
   name: viewer
-labels:
-  app.kubernetes.io/component: rbac
-  app.kubernetes.io/part-of: native-security
+  labels:
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/part-of: native-security
 rules:
 - apiGroups: [""]
   resources: ["pods", "services", "configmaps"]
