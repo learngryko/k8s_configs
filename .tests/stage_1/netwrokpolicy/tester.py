@@ -2,10 +2,9 @@ import subprocess
 import sys
 import time
 
-# Dane testowe (możesz rozbudować o własne ns/pody)
 NAMESPACES = ["dev", "prod", "monitoring"]
-POD_IMAGE = "busybox"  # lekki, ma ping/nslookup/nc
-TEST_DOMAIN = "kubernetes.default"  # do testu DNS
+POD_IMAGE = "busybox:1.35.0"  # stabilny, ma shelle i ping
+TEST_DOMAIN = "kubernetes.default"
 
 def run(cmd):
     try:
@@ -17,23 +16,47 @@ def run(cmd):
         return str(ex)
 
 def create_test_pod(namespace, podname):
-    # Tworzymy tymczasowego poda z busyboxem
     print(f"Tworzę testowego poda: {podname} w ns {namespace}")
     run(f"kubectl -n {namespace} delete pod {podname} --ignore-not-found")
-    out = run(
-        f"kubectl -n {namespace} run {podname} --image={POD_IMAGE} --restart=Never "
-        f"--command -- sleep 3600"
-    )
-    # Czekamy na gotowość
+    pod_yaml = f"""
+apiVersion: v1
+kind: Pod
+metadata:
+  name: {podname}
+spec:
+  containers:
+    - name: test
+      image: busybox:1.35.0
+      command: ["sleep", "3600"]
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop: ["ALL"]
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+  securityContext:
+    runAsNonRoot: true
+"""
+    # Zapisz do tymczasowego pliku
+    with open(f"/tmp/{podname}.yaml", "w") as f:
+        f.write(pod_yaml)
+    run(f"kubectl -n {namespace} apply -f /tmp/{podname}.yaml")
+    # Czekaj aż będzie Running
     for i in range(30):
-        phase = run(f"kubectl -n {namespace} get pod {podname} -o=jsonpath='{{.status.phase}}'")
+        pods = run(f"kubectl -n {namespace} get pods -o name")
+        if f"pod/{podname}" not in pods:
+            time.sleep(1)
+            continue
+        phase = run(f"kubectl -n {namespace} get pod {podname} -o jsonpath='{{.status.phase}}'")
         if "Running" in phase:
-            break
+            return True
         time.sleep(1)
-    else:
-        print(f"[ERROR] Pod {podname} nie wystartował w ns {namespace}")
-        return False
-    return True
+    logs = run(f"kubectl -n {namespace} describe pod {podname}")
+    print(f"[ERROR] Pod {podname} nie wystartował w ns {namespace}")
+    print(logs)
+    return False
+
 
 def delete_test_pod(namespace, podname):
     run(f"kubectl -n {namespace} delete pod {podname} --ignore-not-found")
