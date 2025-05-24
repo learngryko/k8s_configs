@@ -1,5 +1,11 @@
 resources:
   - ../native-only
 
+  # Networkpolicy
+  - networkpolicy/dev
+  - networkpolicy/prod
+  - networkpolicy/monitoring
+
+  # Calico
+  - ./rbac/cni-installer-rbac.yaml
   - ./calico
-# future additions: gatekeeper, falco, trivy, networkpolicy, etc
