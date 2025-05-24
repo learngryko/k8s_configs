@@ -8,5 +8,10 @@ metadata:
     app.kubernetes.io/part-of: native-security
 rules:
 - apiGroups: [""]
-  resources: ["pods", "deployments", "configmaps", "secrets"]
+  resources: ["pods", "configmaps", "secrets"]
   verbs: ["get", "list", "create", "update", "delete"]
+
+- apiGroups: ["apps"]
+  resources: ["deployments"]
+  verbs: ["get", "list", "create", "update", "delete"]
+
