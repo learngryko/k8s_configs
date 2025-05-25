@@ -26,7 +26,7 @@ metadata:
 spec:
   containers:
     - name: test
-      image: alpine:3.18
+      image: busybox:1.35.0
       command: ["sleep", "3600"]
       securityContext:
         runAsUser: 1000
@@ -40,11 +40,11 @@ spec:
     runAsNonRoot: true
 """
 
-    # Zapisz do tymczasowego pliku
+    # zapisuję pod spec do pliku tymczasowego
     with open(f"/tmp/{podname}.yaml", "w") as f:
         f.write(pod_yaml)
     run(f"kubectl -n {namespace} apply -f /tmp/{podname}.yaml")
-    # Czekaj aż będzie Running
+    # Czekam aż pod będzie Running
     for i in range(30):
         pods = run(f"kubectl -n {namespace} get pods -o name")
         if f"pod/{podname}" not in pods:
@@ -67,12 +67,15 @@ def get_pod_ip(namespace, podname):
     return ip.strip()
 
 def exec_pod(namespace, podname, cmd):
-    return run(f"kubectl -n {namespace} exec {podname} -- {cmd}")
+    full_cmd = f"kubectl -n {namespace} exec {podname} -- {cmd}"
+    result = run(full_cmd)
+    print(f"[DEBUG] exec {namespace}/{podname}: {cmd} => {repr(result)}")  # DEBUG output!
+    return result
 
 def test_dns(namespace, podname):
     print(f"Testuję DNS w {namespace} ({podname}) ... ", end="")
     res = exec_pod(namespace, podname, f"nslookup {TEST_DOMAIN}")
-    if "Name:" in res:
+    if "Name:" in res or "name =" in res:
         print("✅ DNS OK")
         return True
     else:
@@ -81,13 +84,15 @@ def test_dns(namespace, podname):
 
 def test_ping(src_ns, src_pod, dst_ip):
     res = exec_pod(src_ns, src_pod, f"ping -c 2 -W 2 {dst_ip}")
-    if "2 packets transmitted, 2 packets received" in res or "0% packet loss" in res:
+    # busybox ping output: look for '0% packet loss'
+    if "0% packet loss" in res:
         return True
     return False
 
 def test_nc(src_ns, src_pod, dst_ip, port):
     res = exec_pod(src_ns, src_pod, f"nc -vz -w 2 {dst_ip} {port}")
-    if "succeeded" in res or "open" in res:
+    # busybox netcat returns 'open' if success
+    if "open" in res or "succeeded" in res:
         return True
     return False
 
@@ -103,7 +108,7 @@ def main():
             print(f"[FATAL] Nie można stworzyć podów testowych. Przerwano.")
             sys.exit(1)
 
-    # Poczekaj chwilę aż sieć/DNS się ustabilizują po utworzeniu podów
+    # Poczekaj aż sieć/DNS się ustabilizują
     print("Czekam 5 sekund na stabilizację sieci i DNS...")
     time.sleep(5)
 
@@ -132,7 +137,7 @@ def main():
     dev_pod = pods["dev"]
     mon_pod = pods["monitoring"]
     mon_ip = get_pod_ip("monitoring", mon_pod)
-    ok_nc = test_nc("dev", dev_pod, mon_ip, 3100)  # Przykładowy port Loki
+    ok_nc = test_nc("dev", dev_pod, mon_ip, 3100)  # przykładowy port Loki
     print(f"dev -> monitoring: ", end="")
     if ok_nc:
         print("✅ ALLOWED (OK, wyjątek monitoring działa)")
