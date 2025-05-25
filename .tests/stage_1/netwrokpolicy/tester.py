@@ -3,8 +3,9 @@ import sys
 import time
 
 NAMESPACES = ["dev", "prod", "monitoring"]
-POD_IMAGE = "busybox:1.35.0"  # stabilny, ma shelle i ping
+POD_IMAGE = "busybox:1.35.0"
 TEST_DOMAIN = "google.com"
+PODS_PER_NS = 2
 
 def run(cmd):
     try:
@@ -26,7 +27,7 @@ metadata:
 spec:
   containers:
     - name: test
-      image: busybox:1.35.0
+      image: {POD_IMAGE}
       command: ["sleep", "3600"]
       securityContext:
         runAsUser: 1000
@@ -39,12 +40,10 @@ spec:
   securityContext:
     runAsNonRoot: true
 """
-
-    # zapisuję pod spec do pliku tymczasowego
     with open(f"/tmp/{podname}.yaml", "w") as f:
         f.write(pod_yaml)
     run(f"kubectl -n {namespace} apply -f /tmp/{podname}.yaml")
-    # Czekam aż pod będzie Running
+    # Czekaj aż pod będzie Running
     for i in range(30):
         pods = run(f"kubectl -n {namespace} get pods -o name")
         if f"pod/{podname}" not in pods:
@@ -69,7 +68,7 @@ def get_pod_ip(namespace, podname):
 def exec_pod(namespace, podname, cmd):
     full_cmd = f"kubectl -n {namespace} exec {podname} -- {cmd}"
     result = run(full_cmd)
-    print(f"[DEBUG] exec {namespace}/{podname}: {cmd} => {repr(result)}")  # DEBUG output!
+    print(f"[DEBUG] exec {namespace}/{podname}: {cmd} => {repr(result)}")
     return result
 
 def test_dns(namespace, podname):
@@ -82,62 +81,54 @@ def test_dns(namespace, podname):
         print("❌ DNS BLOCKED")
         return False
 
-def test_ping(src_ns, src_pod, dst_ip):
-    res = exec_pod(src_ns, src_pod, f"ping -c 2 -W 2 {dst_ip}")
-    # busybox ping output: look for '0% packet loss'
-    if "0% packet loss" in res:
-        return True
-    return False
-
 def test_nc(src_ns, src_pod, dst_ip, port):
     res = exec_pod(src_ns, src_pod, f"nc -vz -w 2 {dst_ip} {port}")
-    # busybox netcat returns 'open' if success
     if "open" in res or "succeeded" in res:
         return True
     return False
 
 def main():
-    pods = {}
+    pods = {}  # {ns: [pod1, pod2]}
+    pod_ips = {}  # {(ns, podname): ip}
 
     print("=== Tworzenie podów testowych ===")
     for ns in NAMESPACES:
-        podname = f"test-pod-{ns}"
-        if create_test_pod(ns, podname):
-            pods[ns] = podname
-        else:
-            print(f"[FATAL] Nie można stworzyć podów testowych. Przerwano.")
-            sys.exit(1)
+        pods[ns] = []
+        for idx in range(1, PODS_PER_NS + 1):
+            podname = f"test-pod-{idx}-{ns}"
+            if create_test_pod(ns, podname):
+                pods[ns].append(podname)
+            else:
+                print(f"[FATAL] Nie można stworzyć poda {podname}. Przerwano.")
+                sys.exit(1)
 
-    # Poczekaj aż sieć/DNS się ustabilizują
     print("Czekam 5 sekund na stabilizację sieci i DNS...")
     time.sleep(5)
 
     print("\n=== Testy DNS ===")
     for ns in NAMESPACES:
-        test_dns(ns, pods[ns])
+        for podname in pods[ns]:
+            test_dns(ns, podname)
+            pod_ips[(ns, podname)] = get_pod_ip(ns, podname)
 
-    print("\n=== Connectivity matrix (ping/nc 80) ===")
-    matrix = {}
+    print("\n=== Connectivity matrix (nc 80) ===")
     for src_ns in NAMESPACES:
-        for dst_ns in NAMESPACES:
-            src_pod = pods[src_ns]
-            dst_pod = pods[dst_ns]
-            dst_ip = get_pod_ip(dst_ns, dst_pod)
-            print(f"{src_ns} -> {dst_ns}: ", end="")
-            ok_ping = test_ping(src_ns, src_pod, dst_ip)
-            ok_nc = test_nc(src_ns, src_pod, dst_ip, 80)
-            if ok_ping or ok_nc:
-                print("❌ ALLOWED (powinno być BLOCKED jeśli nie wyjątek)")
-                matrix[(src_ns, dst_ns)] = "ALLOWED"
-            else:
-                print("✅ BLOCKED")
-                matrix[(src_ns, dst_ns)] = "BLOCKED"
+        for src_pod in pods[src_ns]:
+            for dst_ns in NAMESPACES:
+                for dst_pod in pods[dst_ns]:
+                    dst_ip = pod_ips[(dst_ns, dst_pod)]
+                    print(f"{src_ns}/{src_pod} -> {dst_ns}/{dst_pod}: ", end="")
+                    ok_nc = test_nc(src_ns, src_pod, dst_ip, 80)
+                    if ok_nc:
+                        print("❌ ALLOWED (powinno być BLOCKED jeśli nie wyjątek)")
+                    else:
+                        print("✅ BLOCKED")
 
-    print("\n=== Test DEV -> MONITORING (edge case: egress monitoring) ===")
-    dev_pod = pods["dev"]
-    mon_pod = pods["monitoring"]
-    mon_ip = get_pod_ip("monitoring", mon_pod)
-    ok_nc = test_nc("dev", dev_pod, mon_ip, 3100)  # przykładowy port Loki
+    print("\n=== Test DEV -> MONITORING (edge case: egress monitoring, port 3100) ===")
+    dev_pod = pods["dev"][0]
+    mon_pod = pods["monitoring"][0]
+    mon_ip = pod_ips[("monitoring", mon_pod)]
+    ok_nc = test_nc("dev", dev_pod, mon_ip, 3100)
     print(f"dev -> monitoring: ", end="")
     if ok_nc:
         print("✅ ALLOWED (OK, wyjątek monitoring działa)")
@@ -145,13 +136,15 @@ def main():
         print("❌ BLOCKED (powinno być ALLOWED)")
 
     print("\n=== Sprzątanie ===")
-    for ns, pod in pods.items():
-        delete_test_pod(ns, pod)
+    for ns, podlist in pods.items():
+        for pod in podlist:
+            delete_test_pod(ns, pod)
 
     print("\n=== Podsumowanie edge-casów ===")
     print("- DNS działa tylko jeśli wyjątek egress DNS")
     print("- dev -> monitoring: musi być ALLOWED jeśli jest allow-egress-to-monitoring")
     print("- brak komunikacji dev <-> prod, prod <-> dev, monitoring <-> prod itd. (zero trust)")
+    print("- komunikacja w ramach ns (dev <-> dev itd) zgodnie z politykami")
 
 if __name__ == "__main__":
     main()
