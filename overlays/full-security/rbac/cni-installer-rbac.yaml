@@ -1,16 +1,20 @@
+# ClusterRole for the CNI installer, allows serviceaccount token creation and get
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: cni-installer
 rules:
+  # allow to create tokens for serviceaccounts
   - apiGroups: [""]
     resources: ["serviceaccounts/token"]
     verbs: ["create"]
+  # allow to get serviceaccounts
   - apiGroups: [""]
     resources: ["serviceaccounts"]
     verbs: ["get"]
 
 ---
+# Bind cni-installer ClusterRole to calico-node serviceaccount in kube-system
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
@@ -25,22 +29,27 @@ subjects:
     namespace: kube-system
 
 ---
+# ClusterRole for Calico components, allows access to all Calico CRDs and key K8s resources
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: calico-crd-access
 rules:
+  # allow full access to all Calico CRDs
   - apiGroups: ["crd.projectcalico.org"]
     resources: ["*"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  # allow to get, list, watch, patch and update pods and nodes (patch needed for pod/status updates!)
   - apiGroups: [""]
-    resources: ["pods", "namespaces", "nodes", "serviceaccounts"]
-    verbs: ["get", "list", "watch"]
+    resources: ["pods", "pods/status", "namespaces", "nodes", "serviceaccounts"]
+    verbs: ["get", "list", "watch", "patch", "update"]
+  # allow full access to K8s NetworkPolicies
   - apiGroups: ["networking.k8s.io"]
     resources: ["networkpolicies"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
 
 ---
+# Bind calico-crd-access ClusterRole to both calico-cni-plugin and calico-kube-controllers
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
@@ -52,4 +61,7 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: calico-cni-plugin
+    namespace: kube-system
+  - kind: ServiceAccount
+    name: calico-kube-controllers
     namespace: kube-system
