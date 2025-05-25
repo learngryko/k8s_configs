@@ -6,6 +6,3 @@ resources:
   - networkpolicy/dev
   - networkpolicy/prod
   - networkpolicy/monitoring
-
-  # Calico
-  - ./rbac/cni-installer-rbac.yaml
