@@ -1,0 +1,91 @@
+# ClusterRole for the CNI installer (token, SA)
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: cni-installer
+rules:
+  - apiGroups: [""]
+    resources: ["serviceaccounts/token"]
+    verbs: ["create"]
+  - apiGroups: [""]
+    resources: ["serviceaccounts"]
+    verbs: ["get"]
+
+---
+# ClusterRoleBinding cni-installer -> calico-node SA w calico-system
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: cni-installer-calico-node
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cni-installer
+subjects:
+  - kind: ServiceAccount
+    name: calico-node
+    namespace: calico-system
+
+---
+# ClusterRole dla Calico CRDs, pods, nodes, SA
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: calico-crd-access
+rules:
+  - apiGroups: ["crd.projectcalico.org"]
+    resources: ["*"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: [""]
+    resources: ["pods", "pods/status", "namespaces", "nodes", "serviceaccounts"]
+    verbs: ["get", "list", "watch", "patch", "update"]
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["networkpolicies"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+---
+# ClusterRoleBinding calico-crd-access -> calico-cni-plugin, calico-kube-controllers w calico-system
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: calico-crd-access
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: calico-crd-access
+subjects:
+  - kind: ServiceAccount
+    name: calico-cni-plugin
+    namespace: calico-system
+  - kind: ServiceAccount
+    name: calico-kube-controllers
+    namespace: calico-system
+
+---
+# ClusterRole for calico-node (pods, nodes, etc)
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: calico-node
+rules:
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["get", "list", "watch", "patch", "update"]
+  - apiGroups: [""]
+    resources: ["pods", "pods/status", "namespaces", "serviceaccounts"]
+    verbs: ["get", "list", "watch", "patch", "update"]
+
+---
+# ClusterRoleBinding calico-node -> calico-node SA w calico-system
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: calico-node
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: calico-node
+subjects:
+  - kind: ServiceAccount
+    name: calico-node
+    namespace: calico-system
