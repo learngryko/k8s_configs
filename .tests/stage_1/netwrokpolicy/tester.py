@@ -9,7 +9,10 @@ TEST_DOMAIN = "google.com"
 PODS_PER_NS = 2
 NC_TIMEOUT = 10
 
+DEBUG_LOG_FILE = "debug.log"
+
 def run(cmd):
+    # Run a shell command and return output as string
     try:
         out = subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT, timeout=30)
         return out.decode()
@@ -19,8 +22,9 @@ def run(cmd):
         return str(ex)
 
 def create_test_pod(namespace, podname):
-    print(f"Tworzę testowego poda: {podname} w ns {namespace}")
+    print(f"Creating test pod: {podname} in ns {namespace}")
     run(f"kubectl -n {namespace} delete pod {podname} --ignore-not-found")
+    # This pod runs a TCP server on port 80 for connectivity tests
     pod_yaml = f"""
 apiVersion: v1
 kind: Pod
@@ -30,7 +34,7 @@ spec:
   containers:
     - name: test
       image: {POD_IMAGE}
-      command: ["sleep", "3600"]
+      command: ["/bin/sh", "-c", "nc -lk -p 80 & sleep 3600"]
       securityContext:
         runAsUser: 1000
         allowPrivilegeEscalation: false
@@ -45,7 +49,7 @@ spec:
     with open(f"/tmp/{podname}.yaml", "w") as f:
         f.write(pod_yaml)
     run(f"kubectl -n {namespace} apply -f /tmp/{podname}.yaml")
-    # Czekaj aż pod będzie Running
+    # Wait until pod is Running
     for i in range(30):
         pods = run(f"kubectl -n {namespace} get pods -o name")
         if f"pod/{podname}" not in pods:
@@ -56,25 +60,30 @@ spec:
             return True
         time.sleep(1)
     logs = run(f"kubectl -n {namespace} describe pod {podname}")
-    print(f"[ERROR] Pod {podname} nie wystartował w ns {namespace}")
+    print(f"[ERROR] Pod {podname} did not start in ns {namespace}")
     print(logs)
     return False
 
 def delete_test_pod(namespace, podname):
+    # Delete test pod at the end of testing
     run(f"kubectl -n {namespace} delete pod {podname} --ignore-not-found")
 
 def get_pod_ip(namespace, podname):
+    # Get pod IP address
     ip = run(f"kubectl -n {namespace} get pod {podname} -o=jsonpath='{{.status.podIP}}'")
     return ip.strip()
 
 def exec_pod(namespace, podname, cmd):
+    # Execute a command in a pod and return the result. Debug to file only.
     full_cmd = f"kubectl -n {namespace} exec {podname} -- {cmd}"
     result = run(full_cmd)
-    print(f"[DEBUG] exec {namespace}/{podname}: {cmd} => {repr(result)}")
+    with open(DEBUG_LOG_FILE, "a") as dbg:
+        dbg.write(f"[DEBUG] exec {namespace}/{podname}: {cmd} => {repr(result)}\n")
     return result
 
 def test_dns(namespace, podname):
-    print(f"Testuję DNS w {namespace} ({podname}) ... ", end="")
+    # Test DNS resolution inside the pod
+    print(f"Testing DNS in {namespace} ({podname}) ... ", end="")
     res = exec_pod(namespace, podname, f"nslookup {TEST_DOMAIN}")
     if "Name:" in res or "name =" in res:
         print("✅ DNS OK")
@@ -84,19 +93,23 @@ def test_dns(namespace, podname):
         return False
 
 def test_nc(src_ns, src_pod, dst_ns, dst_pod, dst_ip, port):
+    # Test TCP connectivity from one pod to another on a given port
     res = exec_pod(src_ns, src_pod, f"nc -vz -w {NC_TIMEOUT} {dst_ip} {port}")
     allowed = "open" in res or "succeeded" in res
     result = (
         f"{src_ns}/{src_pod} -> {dst_ns}/{dst_pod}: " +
-        ("❌ ALLOWED (powinno być BLOCKED jeśli nie wyjątek)" if allowed else "✅ BLOCKED")
+        ("❌ ALLOWED (should be BLOCKED unless exception)" if allowed else "✅ BLOCKED")
     )
     return result
 
 def main():
+    # Clean old debug log at the start
+    open(DEBUG_LOG_FILE, "w").close()
+
     pods = {}  # {ns: [pod1, pod2]}
     pod_ips = {}  # {(ns, podname): ip}
 
-    print("=== Tworzenie podów testowych ===")
+    print("=== Creating test pods ===")
     for ns in NAMESPACES:
         pods[ns] = []
         for idx in range(1, PODS_PER_NS + 1):
@@ -104,19 +117,19 @@ def main():
             if create_test_pod(ns, podname):
                 pods[ns].append(podname)
             else:
-                print(f"[FATAL] Nie można stworzyć poda {podname}. Przerwano.")
+                print(f"[FATAL] Cannot create pod {podname}. Aborting.")
                 sys.exit(1)
 
-    print("Czekam 5 sekund na stabilizację sieci i DNS...")
+    print("Waiting 5 seconds for network and DNS stabilization...")
     time.sleep(5)
 
-    print("\n=== Testy DNS ===")
+    print("\n=== DNS Tests ===")
     for ns in NAMESPACES:
         for podname in pods[ns]:
             test_dns(ns, podname)
             pod_ips[(ns, podname)] = get_pod_ip(ns, podname)
 
-    print("\n=== Connectivity matrix (nc 80, równolegle) ===")
+    print("\n=== Connectivity matrix (nc 80, parallel) ===")
     test_cases = []
     for src_ns in NAMESPACES:
         for src_pod in pods[src_ns]:
@@ -143,16 +156,16 @@ def main():
     edge_case = test_nc("dev", dev_pod, "monitoring", mon_pod, mon_ip, 3100)
     print(f"dev -> monitoring: {edge_case}")
 
-    print("\n=== Sprzątanie ===")
+    print("\n=== Cleanup ===")
     for ns, podlist in pods.items():
         for pod in podlist:
             delete_test_pod(ns, pod)
 
-    print("\n=== Podsumowanie edge-casów ===")
-    print("- DNS działa tylko jeśli wyjątek egress DNS")
-    print("- dev -> monitoring: musi być ALLOWED jeśli jest allow-egress-to-monitoring")
-    print("- brak komunikacji dev <-> prod, prod <-> dev, monitoring <-> prod itd. (zero trust)")
-    print("- komunikacja w ramach ns (dev <-> dev itd) zgodnie z politykami")
+    print("\n=== Edge case summary ===")
+    print("- DNS works only if there is an egress DNS exception")
+    print("- dev -> monitoring: should be ALLOWED if allow-egress-to-monitoring is present")
+    print("- no dev <-> prod, prod <-> dev, monitoring <-> prod etc. communication (zero trust)")
+    print("- intra-namespace communication (dev <-> dev, etc.) as per policies")
 
 if __name__ == "__main__":
     main()
