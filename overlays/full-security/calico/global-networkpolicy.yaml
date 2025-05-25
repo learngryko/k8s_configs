@@ -41,7 +41,6 @@ spec:
       destination:
         namespaceSelector: 'k8s.io/metadata.name == "kube-system"'
       protocol: UDP
-      ports: [53]
 
     # Allow all egress traffic to the monitoring namespace
     - action: Allow
@@ -58,14 +57,12 @@ spec:
       destination:
         nets: ["192.168.88.0/24"]   # <-- sieć API servera (zmień na swoją!)
       protocol: TCP
-      ports: [443]
 
     # Allow egress to public internet (np. GitHub)
     - action: Allow
       destination:
         nets: ["0.0.0.0/0"]
       protocol: TCP
-      ports: [443]
 
     # Deny all other egress traffic
     - action: Deny
