@@ -8,4 +8,4 @@ resources:
 
   # Calico
   - ./rbac/cni-installer-rbac.yaml
-  - ./calico
+  # - ./calico
