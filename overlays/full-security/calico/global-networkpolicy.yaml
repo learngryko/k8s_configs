@@ -22,7 +22,7 @@ spec:
     # Allow ingress to argocd (GUI/API) from a trusted IP (np. Twoje biuro)
     - action: Allow
       source:
-        nets: ["<192.168.88.35>/24"]
+        nets: ["192.168.88.35/24"]
       destination:
         namespaceSelector: 'name == "argocd"'
 
@@ -40,7 +40,7 @@ spec:
     - action: Allow
       destination:
         namespaceSelector: 'k8s.io/metadata.name == "kube-system"'
-        ports: [53]
+      ports: [53]
       protocol: UDP
 
     # Allow all egress traffic to the monitoring namespace
@@ -56,7 +56,7 @@ spec:
     # Allow egress to Kubernetes API server (if you know the IP)
     - action: Allow
       destination:
-        nets: ["<API_SERVER_IP>/32"]
+        nets: ["192.168.88.150/24"]
       protocol: TCP
       ports: [443]
 
