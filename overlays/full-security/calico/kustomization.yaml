@@ -1,3 +1,2 @@
-resources:
-  - path: patch-calico-felix-defaultendpointtohostaction.yaml
+# resources:
     # - global-networkpolicy.yaml
