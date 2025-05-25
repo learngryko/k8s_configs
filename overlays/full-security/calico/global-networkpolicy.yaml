@@ -3,81 +3,56 @@ kind: GlobalNetworkPolicy
 metadata:
   name: global-default-security
 spec:
-  # High order ensures namespace-scoped policies take precedence.
   order: 1000
   selector: all()
 
   ingress:
-    # Allow all ingress traffic within the argocd namespace.
+    # Allow all ingress traffic within the argocd namespace
     - action: Allow
       source:
         namespaceSelector: 'name == "argocd"'
       destination:
         namespaceSelector: 'name == "argocd"'
-      comment: Allow ingress within argocd namespace
 
-    # Allow ingress traffic from the monitoring namespace (e.g., Prometheus scraping).
+    # Allow ingress traffic from the monitoring namespace
     - action: Allow
       source:
         namespaceSelector: 'name == "monitoring"'
-      comment: Allow ingress from monitoring namespace
 
-    # (Optional) Allow ingress from kube-dns if DNS discovery over TCP is needed.
-    # - action: Allow
-    #   source:
-    #     namespaceSelector: 'k8s.io/metadata.name == "kube-system"'
-    #     podSelector: 'k8s-app == "kube-dns"'
-    #   protocol: TCP
-    #   destination:
-    #     ports: [53]
-    #   comment: Allow ingress DNS over TCP
-
-    # Deny all other ingress traffic.
+    # Deny all other ingress traffic
     - action: Deny
       source: {}
-      comment: Deny all other ingress
 
   egress:
+    # Allow all egress traffic to the argocd namespace
     - action: Allow
       destination:
         namespaceSelector: 'name == "argocd"'
-      comment: Allow egress to argocd namespace
 
+    # Allow egress DNS (UDP 53) to kube-dns in kube-system
     - action: Allow
       destination:
         namespaceSelector: 'k8s.io/metadata.name == "kube-system"'
-        podSelector: 'k8s-app == "kube-dns"'
-        ports:
-          - 53
+        ports: [53]
       protocol: UDP
-      comment: Allow egress DNS (UDP 53) to kube-dns
 
+    # Allow all egress traffic to the monitoring namespace
     - action: Allow
       destination:
         namespaceSelector: 'name == "monitoring"'
-      comment: Allow egress to monitoring namespace
 
+    # Allow egress to kube-system namespace (for API, csi, etc.)
     - action: Allow
       destination:
         namespaceSelector: 'k8s.io/metadata.name == "kube-system"'
-      comment: Allow egress to kube-system namespace
 
-    - action: Allow
-      destination:
-        ports:
-          - 443
-      protocol: TCP
-      comment: Allow egress to Kubernetes API server (by port)
-
-    # (Optional) Allow egress to the internet for pulling images
+    # Allow egress to Kubernetes API server (if you know the IP)
     # - action: Allow
     #   destination:
-    #     nets: ["0.0.0.0/0"]
-    #     ports:
-    #       - 443
+    #     nets: ["<API_SERVER_IP>/32"]
     #   protocol: TCP
-    #   comment: Allow egress to internet for container image pulls
+    #   ports: [443]
 
+    # Deny all other egress traffic
     - action: Deny
       destination: {}
-      comment: Deny all other egress
