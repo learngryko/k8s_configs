@@ -18,6 +18,7 @@ resources:
   - rbac/monitoring/bindings.yaml
 
 
+
 patchesStrategicMerge:
   - namespace-patches/prod.yaml
   - namespace-patches/dev.yaml
