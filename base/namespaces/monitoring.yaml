@@ -3,5 +3,5 @@ kind: Namespace
 metadata:
   name: monitoring
   labels:
-    name: monitoring
+    kubernetes.io/metadata.name: monitoring
     app.kubernetes.io/part-of: security-stack

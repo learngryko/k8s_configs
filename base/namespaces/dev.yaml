@@ -3,6 +3,6 @@ kind: Namespace
 metadata:
   name: dev
   labels:
-    name: dev
+    kubernetes.io/metadata.name: dev
     app.kubernetes.io/part-of: security-stack
   

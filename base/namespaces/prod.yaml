@@ -3,5 +3,5 @@ kind: Namespace
 metadata:
   name: prod
   labels:
-    name: prod
+    kubernetes.io/metadata.name: prod
     app.kubernetes.io/part-of: security-stack
