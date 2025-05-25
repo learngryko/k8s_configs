@@ -37,14 +37,12 @@ spec:
       source: {}
       comment: Deny all other ingress
 
-  egress:
-    # Allow all egress traffic to the argocd namespace.
+    egress:
     - action: Allow
       destination:
         namespaceSelector: 'name == "argocd"'
       comment: Allow egress to argocd namespace
 
-    # Allow egress DNS (UDP 53) to kube-dns in kube-system.
     - action: Allow
       destination:
         namespaceSelector: 'k8s.io/metadata.name == "kube-system"'
@@ -54,13 +52,32 @@ spec:
       protocol: UDP
       comment: Allow egress DNS (UDP 53) to kube-dns
 
-    # Allow all egress traffic to the monitoring namespace (logs, metrics).
     - action: Allow
       destination:
         namespaceSelector: 'name == "monitoring"'
       comment: Allow egress to monitoring namespace
 
-    # Deny all other egress traffic.
+    - action: Allow
+      destination:
+        namespaceSelector: 'k8s.io/metadata.name == "kube-system"'
+      comment: Allow egress to kube-system namespace
+
+    - action: Allow
+      destination:
+        ports:
+          - 443
+      protocol: TCP
+      comment: Allow egress to Kubernetes API server (by port)
+
+    # (Optional) Allow egress to the internet for pulling images
+    # - action: Allow
+    #   destination:
+    #     nets: ["0.0.0.0/0"]
+    #     ports:
+    #       - 443
+    #   protocol: TCP
+    #   comment: Allow egress to internet for container image pulls
+
     - action: Deny
       destination: {}
       comment: Deny all other egress
