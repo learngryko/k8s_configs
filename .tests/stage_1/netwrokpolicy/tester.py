@@ -4,7 +4,7 @@ import time
 
 NAMESPACES = ["dev", "prod", "monitoring"]
 POD_IMAGE = "busybox:1.35.0"  # stabilny, ma shelle i ping
-TEST_DOMAIN = "kubernetes.default"
+TEST_DOMAIN = "google.com"
 
 def run(cmd):
     try:

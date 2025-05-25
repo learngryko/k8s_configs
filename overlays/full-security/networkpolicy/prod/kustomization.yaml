@@ -1,4 +1,4 @@
 resources:
   - default-deny.yaml
   - allow-dns.yaml
-  - allow-monitoring.yaml
+  - allow-egress-to-monitoring.yaml
