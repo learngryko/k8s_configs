@@ -1,11 +1,13 @@
 import subprocess
 import sys
 import time
+import concurrent.futures
 
 NAMESPACES = ["dev", "prod", "monitoring"]
 POD_IMAGE = "busybox:1.35.0"
 TEST_DOMAIN = "google.com"
 PODS_PER_NS = 2
+NC_TIMEOUT = 10
 
 def run(cmd):
     try:
@@ -81,11 +83,14 @@ def test_dns(namespace, podname):
         print("❌ DNS BLOCKED")
         return False
 
-def test_nc(src_ns, src_pod, dst_ip, port):
-    res = exec_pod(src_ns, src_pod, f"nc -vz -w 2 {dst_ip} {port}")
-    if "open" in res or "succeeded" in res:
-        return True
-    return False
+def test_nc(src_ns, src_pod, dst_ns, dst_pod, dst_ip, port):
+    res = exec_pod(src_ns, src_pod, f"nc -vz -w {NC_TIMEOUT} {dst_ip} {port}")
+    allowed = "open" in res or "succeeded" in res
+    result = (
+        f"{src_ns}/{src_pod} -> {dst_ns}/{dst_pod}: " +
+        ("❌ ALLOWED (powinno być BLOCKED jeśli nie wyjątek)" if allowed else "✅ BLOCKED")
+    )
+    return result
 
 def main():
     pods = {}  # {ns: [pod1, pod2]}
@@ -111,29 +116,32 @@ def main():
             test_dns(ns, podname)
             pod_ips[(ns, podname)] = get_pod_ip(ns, podname)
 
-    print("\n=== Connectivity matrix (nc 80) ===")
+    print("\n=== Connectivity matrix (nc 80, równolegle) ===")
+    test_cases = []
     for src_ns in NAMESPACES:
         for src_pod in pods[src_ns]:
             for dst_ns in NAMESPACES:
                 for dst_pod in pods[dst_ns]:
                     dst_ip = pod_ips[(dst_ns, dst_pod)]
-                    print(f"{src_ns}/{src_pod} -> {dst_ns}/{dst_pod}: ", end="")
-                    ok_nc = test_nc(src_ns, src_pod, dst_ip, 80)
-                    if ok_nc:
-                        print("❌ ALLOWED (powinno być BLOCKED jeśli nie wyjątek)")
-                    else:
-                        print("✅ BLOCKED")
+                    test_cases.append( (src_ns, src_pod, dst_ns, dst_pod, dst_ip, 80) )
+
+    results = []
+    with concurrent.futures.ThreadPoolExecutor(max_workers=16) as executor:
+        future_to_test = {
+            executor.submit(test_nc, *args): args
+            for args in test_cases
+        }
+        for future in concurrent.futures.as_completed(future_to_test):
+            result = future.result()
+            print(result)
+            results.append(result)
 
     print("\n=== Test DEV -> MONITORING (edge case: egress monitoring, port 3100) ===")
     dev_pod = pods["dev"][0]
     mon_pod = pods["monitoring"][0]
     mon_ip = pod_ips[("monitoring", mon_pod)]
-    ok_nc = test_nc("dev", dev_pod, mon_ip, 3100)
-    print(f"dev -> monitoring: ", end="")
-    if ok_nc:
-        print("✅ ALLOWED (OK, wyjątek monitoring działa)")
-    else:
-        print("❌ BLOCKED (powinno być ALLOWED)")
+    edge_case = test_nc("dev", dev_pod, "monitoring", mon_pod, mon_ip, 3100)
+    print(f"dev -> monitoring: {edge_case}")
 
     print("\n=== Sprzątanie ===")
     for ns, podlist in pods.items():
