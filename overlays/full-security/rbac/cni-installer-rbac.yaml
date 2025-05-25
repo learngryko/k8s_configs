@@ -22,3 +22,26 @@ subjects:
   - kind: ServiceAccount
     name: calico-node
     namespace: kube-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: calico-crd-access
+rules:
+  - apiGroups: ["crd.projectcalico.org"]
+    resources: ["clusterinformations"]
+    verbs: ["get", "list", "watch"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: calico-crd-access
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: calico-crd-access
+subjects:
+  - kind: ServiceAccount
+    name: calico-cni-plugin
+    namespace: kube-system
