@@ -1,6 +1,5 @@
 resources:
   - default-deny.yaml
   - allow-dns.yaml
-  - allow-monitoring.yaml
   - allow-egress-to-monitoring.yaml
   - allow-dev-to-dev.yaml

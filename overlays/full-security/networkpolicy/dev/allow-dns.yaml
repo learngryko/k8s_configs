@@ -2,22 +2,26 @@ apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: allow-dns
-  namespace: dev
+  namespace: dev  # set your target namespace
   labels:
     app.kubernetes.io/managed-by: argocd
     app.kubernetes.io/component: networkpolicy
     app.kubernetes.io/name: networkpolicy-dev
     app.kubernetes.io/part-of: native-security
 spec:
-  podSelector: {}
+  podSelector: {}  # applies to all pods in this namespace
   policyTypes:
     - Egress
   egress:
     - to:
-        - namespaceSelector: {}
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system  # target kube-system namespace
           podSelector:
             matchLabels:
-              k8s-app: kube-dns
+              k8s-app: kube-dns  # match only CoreDNS pods
       ports:
         - protocol: UDP
-          port: 53
+          port: 53  # allow UDP DNS queries
+        - protocol: TCP
+          port: 53  # allow TCP DNS queries (fallback/large requests)

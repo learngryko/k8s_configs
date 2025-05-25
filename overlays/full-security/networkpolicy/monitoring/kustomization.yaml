@@ -1,3 +1,4 @@
 resources:
   - default-deny.yaml
-  - allow-dns.yaml
+  - allow-from-prod-and-dev.yaml
+  
