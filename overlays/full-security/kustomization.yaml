@@ -1,4 +1,5 @@
 resources:
+  - namespace-patches/calico-system.yaml
   - ../native-only
 
   # Networkpolicy
@@ -8,8 +9,3 @@ resources:
 
   # Calico
   - ./rbac/cni-installer-rbac.yaml
-  # - ./calico
-
-  
-patchesStrategicMerge:
-  - namespace-patches/calico-system.yaml
