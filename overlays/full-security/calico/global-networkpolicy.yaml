@@ -1,69 +1,29 @@
-apiVersion: crd.projectcalico.org/v1
-kind: GlobalNetworkPolicy
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
 metadata:
-  name: global-default-security
+  name: allow-all-argocd
+  namespace: argocd
 spec:
-  order: 1000
-  selector: all()
-
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
   ingress:
-    # Allow all ingress traffic within the argocd namespace
-    - action: Allow
-      source:
-        namespaceSelector: 'name == "argocd"'
-      destination:
-        namespaceSelector: 'name == "argocd"'
-
-    # Allow ingress traffic from the monitoring namespace
-    - action: Allow
-      source:
-        namespaceSelector: 'name == "monitoring"'
-
-    # Allow ingress to argocd (GUI/API) from trusted network (np. Twoje biuro)
-    - action: Allow
-      source:
-        nets: ["192.168.88.0/24"]       # <-- sieć biura (zmień na swoją!)
-      destination:
-        namespaceSelector: 'name == "argocd"'
-
-    # Deny all other ingress traffic
-    - action: Deny
-      source: {}
-
+    - {}
   egress:
-    # Allow all egress traffic to the argocd namespace
-    - action: Allow
-      destination:
-        namespaceSelector: 'name == "argocd"'
-
-    # Allow egress DNS (UDP 53) to kube-dns in kube-system
-    - action: Allow
-      destination:
-        namespaceSelector: 'k8s.io/metadata.name == "kube-system"'
-      protocol: UDP
-
-    # Allow all egress traffic to the monitoring namespace
-    - action: Allow
-      destination:
-        namespaceSelector: 'name == "monitoring"'
-
-    # Allow egress to kube-system namespace (for API, csi, etc.)
-    - action: Allow
-      destination:
-        namespaceSelector: 'k8s.io/metadata.name == "kube-system"'
-
-    # Allow egress to Kubernetes API server subnet (przykład /24)
-    - action: Allow
-      destination:
-        nets: ["192.168.88.0/24"]   # <-- sieć API servera (zmień na swoją!)
-      protocol: TCP
-
-    # Allow egress to public internet (np. GitHub)
-    - action: Allow
-      destination:
-        nets: ["0.0.0.0/0"]
-      protocol: TCP
-
-    # Deny all other egress traffic
-    - action: Deny
-      destination: {}
+    - {}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-all-kube-system
+  namespace: kube-system
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - {}
+  egress:
+    - {}
