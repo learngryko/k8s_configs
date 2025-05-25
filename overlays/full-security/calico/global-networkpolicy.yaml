@@ -37,7 +37,7 @@ spec:
       source: {}
       comment: Deny all other ingress
 
-    egress:
+  egress:
     - action: Allow
       destination:
         namespaceSelector: 'name == "argocd"'
