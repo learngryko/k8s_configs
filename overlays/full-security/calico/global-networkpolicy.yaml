@@ -3,37 +3,48 @@ kind: GlobalNetworkPolicy
 metadata:
   name: global-default-security
 spec:
-  # Higher order means this policy will be evaluated after lower order policies.
-  # Use a high order (e.g., 1000) to allow namespace-scoped policies to take precedence.
+  # High order ensures namespace-scoped policies take precedence.
   order: 1000
-
-  # Apply this policy to all pods in the cluster
   selector: all()
 
   ingress:
-    # 1. Allow traffic from the monitoring namespace (e.g., Prometheus scraping)
+    # Allow all ingress traffic within the argocd namespace.
+    - action: Allow
+      source:
+        namespaceSelector: 'name == "argocd"'
+      destination:
+        namespaceSelector: 'name == "argocd"'
+      comment: Allow ingress within argocd namespace
+
+    # Allow ingress traffic from the monitoring namespace (e.g., Prometheus scraping).
     - action: Allow
       source:
         namespaceSelector: 'name == "monitoring"'
-      comment: Allow all ingress from monitoring namespace (for scraping/metrics)
-    
-    # 2. (Optional) Allow ingress from kube-dns if you need DNS-based service discovery via TCP (rare)
+      comment: Allow ingress from monitoring namespace
+
+    # (Optional) Allow ingress from kube-dns if DNS discovery over TCP is needed.
     # - action: Allow
     #   source:
-    #     namespaceSelector: ''
+    #     namespaceSelector: 'k8s.io/metadata.name == "kube-system"'
     #     podSelector: 'k8s-app == "kube-dns"'
     #   protocol: TCP
     #   destination:
     #     ports: [53]
-    #   comment: Allow DNS over TCP (optional, usually UDP is enough)
-    
-    # 3. Default deny all other ingress traffic
+    #   comment: Allow ingress DNS over TCP
+
+    # Deny all other ingress traffic.
     - action: Deny
       source: {}
       comment: Deny all other ingress
 
   egress:
-    # 1. Allow DNS egress (UDP 53) to kube-dns pods in kube-system
+    # Allow all egress traffic to the argocd namespace.
+    - action: Allow
+      destination:
+        namespaceSelector: 'name == "argocd"'
+      comment: Allow egress to argocd namespace
+
+    # Allow egress DNS (UDP 53) to kube-dns in kube-system.
     - action: Allow
       destination:
         namespaceSelector: 'k8s.io/metadata.name == "kube-system"'
@@ -41,15 +52,15 @@ spec:
         ports:
           - 53
       protocol: UDP
-      comment: Allow egress DNS (UDP 53) to kube-dns in kube-system
+      comment: Allow egress DNS (UDP 53) to kube-dns
 
-    # 2. Allow egress to monitoring namespace (for logs, metrics push)
+    # Allow all egress traffic to the monitoring namespace (logs, metrics).
     - action: Allow
       destination:
         namespaceSelector: 'name == "monitoring"'
-      comment: Allow all egress to monitoring namespace (logs/metrics)
+      comment: Allow egress to monitoring namespace
 
-    # 3. Default deny all other egress traffic
+    # Deny all other egress traffic.
     - action: Deny
       destination: {}
       comment: Deny all other egress
