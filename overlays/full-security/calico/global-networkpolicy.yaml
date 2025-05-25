@@ -7,66 +7,55 @@ spec:
   selector: all()
 
   ingress:
-    # Allow all ingress traffic within the argocd namespace
     - action: Allow
       source:
         namespaceSelector: 'name == "argocd"'
       destination:
         namespaceSelector: 'name == "argocd"'
 
-    # Allow ingress traffic from the monitoring namespace
     - action: Allow
       source:
         namespaceSelector: 'name == "monitoring"'
 
-    # Allow ingress to argocd (GUI/API) from a trusted IP (np. Twoje biuro)
     - action: Allow
       source:
-        nets: ["192.168.88.35/24"]
+        nets: ["192.168.88.0/24"]
       destination:
         namespaceSelector: 'name == "argocd"'
 
-    # Deny all other ingress traffic
     - action: Deny
       source: {}
 
   egress:
-    # Allow all egress traffic to the argocd namespace
     - action: Allow
       destination:
         namespaceSelector: 'name == "argocd"'
 
-    # Allow egress DNS (UDP 53) to kube-dns in kube-system
     - action: Allow
       destination:
         namespaceSelector: 'k8s.io/metadata.name == "kube-system"'
-      ports: [53]
       protocol: UDP
+      ports: [53]
 
-    # Allow all egress traffic to the monitoring namespace
     - action: Allow
       destination:
         namespaceSelector: 'name == "monitoring"'
 
-    # Allow egress to kube-system namespace (for API, csi, etc.)
     - action: Allow
       destination:
         namespaceSelector: 'k8s.io/metadata.name == "kube-system"'
 
-    # Allow egress to Kubernetes API server (if you know the IP)
     - action: Allow
       destination:
-        nets: ["192.168.88.150/24"]
+        nets: ["192.168.88.0/24"]
       protocol: TCP
       ports: [443]
 
-    # Allow egress to public internet (np. GitHub)
     - action: Allow
       destination:
         nets: ["0.0.0.0/0"]
       protocol: TCP
       ports: [443]
 
-    # Deny all other egress traffic
     - action: Deny
       destination: {}
