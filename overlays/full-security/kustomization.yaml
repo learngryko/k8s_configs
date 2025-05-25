@@ -9,3 +9,7 @@ resources:
   # Calico
   - ./rbac/cni-installer-rbac.yaml
   # - ./calico
+
+  
+patchesStrategicMerge:
+  - namespace-patches/calico-system.yaml

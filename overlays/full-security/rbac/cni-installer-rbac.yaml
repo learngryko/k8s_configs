@@ -14,7 +14,7 @@ rules:
     verbs: ["get"]
 
 ---
-# Bind cni-installer ClusterRole to calico-node serviceaccount in kube-system
+# Bind cni-installer ClusterRole to calico-node serviceaccount in calico-system
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
@@ -26,7 +26,7 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: calico-node
-    namespace: kube-system
+    namespace: calico-system
 
 ---
 # ClusterRole for Calico components, allows access to all Calico CRDs and key K8s resources
@@ -61,10 +61,10 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: calico-cni-plugin
-    namespace: kube-system
+    namespace: calico-system
   - kind: ServiceAccount
     name: calico-kube-controllers
-    namespace: kube-system
+    namespace: calico-system
 
 ---
 # ClusterRole for calico-node to access Kubernetes nodes and pods (fixes CNI CrashLoop!)
@@ -95,4 +95,4 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: calico-node
-    namespace: kube-system
+    namespace: calico-system
