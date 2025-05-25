@@ -59,7 +59,6 @@ spec:
     print(logs)
     return False
 
-
 def delete_test_pod(namespace, podname):
     run(f"kubectl -n {namespace} delete pod {podname} --ignore-not-found")
 
@@ -103,6 +102,10 @@ def main():
         else:
             print(f"[FATAL] Nie można stworzyć podów testowych. Przerwano.")
             sys.exit(1)
+
+    # Poczekaj chwilę aż sieć/DNS się ustabilizują po utworzeniu podów
+    print("Czekam 5 sekund na stabilizację sieci i DNS...")
+    time.sleep(5)
 
     print("\n=== Testy DNS ===")
     for ns in NAMESPACES:
