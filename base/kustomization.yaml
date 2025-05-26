@@ -1,4 +1,4 @@
-commonLabels:
+labels:
    app.kubernetes.io/component: psa
 resources:
   - namespaces/prod.yaml

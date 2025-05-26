@@ -2,5 +2,5 @@ resources:
   - default-deny.yaml
   - allow-dns.yaml
   - allow-egress-to-monitoring.yaml
+  - allow-egress-to-dev.yaml
   - allow-dev-to-self.yaml
-  - allow-egress-to-monitoring.yaml

@@ -1,4 +1,4 @@
-commonLabels:
+labels:
   app.kubernetes.io/part-of: native-security
   app.kubernetes.io/component: rbac
 
@@ -19,7 +19,7 @@ resources:
 
 
 
-patchesStrategicMerge:
+patches:
   - namespace-patches/prod.yaml
   - namespace-patches/dev.yaml
   - namespace-patches/monitoring.yaml
