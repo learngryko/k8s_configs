@@ -1,7 +1,6 @@
-labels:
-  - pairs:
-    app.kubernetes.io/part-of: native-security
-    app.kubernetes.io/component: rbac
+commonLabels:
+  app.kubernetes.io/part-of: native-security
+  app.kubernetes.io/component: rbac
 
 resources:
   - ../../base

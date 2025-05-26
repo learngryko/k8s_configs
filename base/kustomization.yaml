@@ -1,6 +1,5 @@
-labels:
-  - pairs:
-      app.kubernetes.io/component: psa
+commonLabels:
+   app.kubernetes.io/component: psa
 resources:
   - namespaces/prod.yaml
   - namespaces/dev.yaml
