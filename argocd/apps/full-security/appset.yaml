@@ -22,7 +22,7 @@ spec:
       annotations:
         argocd.argoproj.io/sync-wave: '{{wave}}'
     spec:
-      project: default
+      project: security-project
       source:
         repoURL: https://github.com/learngryko/k8s_configs
         targetRevision: HEAD
