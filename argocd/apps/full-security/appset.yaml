@@ -1,0 +1,39 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: full-security
+  namespace: argocd
+spec:
+  generators:
+    - list:
+        elements:
+          - name: gatekeeper-core
+            path: overlays/full-security/gatekeeper-core
+            wave: "0"
+          - name: gatekeeper-policies
+            path: overlays/full-security/gatekeeper-policies
+            wave: "1"
+          - name: calico
+            path: overlays/full-security/calico
+            wave: "2"
+          - name: namespace-patches
+            path: overlays/full-security/namespace-patches
+            wave: "3"
+  template:
+    metadata:
+      name: '{{name}}'
+      annotations:
+        argocd.argoproj.io/sync-wave: '{{wave}}'
+    spec:
+      project: default
+      source:
+        repoURL: git@your-repo-url
+        targetRevision: HEAD
+        path: '{{path}}'
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: gatekeeper-system
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
