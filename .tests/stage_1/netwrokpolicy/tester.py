@@ -81,11 +81,18 @@ def exec_pod(namespace, podname, cmd):
         dbg.write(f"[DEBUG] exec {namespace}/{podname}: {cmd} => {repr(result)}\n")
     return result
 
+def test_dns(namespace, podname):
+    res = exec_pod(namespace, podname, f"nslookup {TEST_DOMAIN}")
+    allowed = "Name:" in res or "name =" in res
+    # Print and log interpretation
+    print(f"DNS Test: {namespace}/{podname} -> {TEST_DOMAIN} | ALLOWED: {allowed}")
+    print(f"Raw output:\n{res.strip()}\n---")
+    with open(DEBUG_LOG_FILE, "a") as dbg:
+        dbg.write(f"[RESULT] DNS {namespace}/{podname}: ALLOWED={allowed}\n")
+    return allowed
 
 def parse_ping_result(output):
-    # Try to decide if ICMP worked based on typical ping output
     debug_reason = []
-    # True if any of these say "packets received"
     if "0% packet loss" in output:
         debug_reason.append("Found '0% packet loss'")
         return True, debug_reason
@@ -96,7 +103,6 @@ def parse_ping_result(output):
     if "bytes from" in output:
         debug_reason.append("Found 'bytes from'")
         return True, debug_reason
-    # Otherwise, looks blocked
     debug_reason.append("No valid ICMP response")
     return False, debug_reason
 
@@ -104,12 +110,10 @@ def test_ping(src_ns, src_idx, dst_ns, dst_idx, dst_ip):
     src_pod = podname(src_ns, src_idx)
     out = exec_pod(src_ns, src_pod, f"ping -c 3 -w 5 {dst_ip}")
     allowed, debug_reason = parse_ping_result(out)
-    # Print out *everything* about this test
-    print(f"Test: {src_pod} ({src_ns}) -> {dst_ip} (of {dst_ns}) | Allowed: {allowed} | Reason: {debug_reason}")
+    print(f"Ping Test: {src_pod} ({src_ns}) -> {dst_ip} (of {dst_ns}) | ALLOWED: {allowed} | Reason: {debug_reason}")
     print(f"Raw output:\n{out.strip()}\n---")
-    # Also write to debug.log
     with open(DEBUG_LOG_FILE, "a") as dbg:
-        dbg.write(f"[RESULT] {src_pod} -> {dst_ip} : ALLOWED={allowed}, reason={debug_reason}\n")
+        dbg.write(f"[RESULT] PING {src_pod} -> {dst_ip} : ALLOWED={allowed}, reason={debug_reason}\n")
     return allowed
 
 def print_matrix_and_summary(results, src_labels, dst_labels, allowed_set):
@@ -143,7 +147,7 @@ def print_matrix_and_summary(results, src_labels, dst_labels, allowed_set):
 def main():
     open(DEBUG_LOG_FILE, "w").close()  # Clean log
 
-    pod_ips = {}  # (ns, idx) -> ip
+    pod_ips = {}
     src_labels = []
     dst_labels = []
 
@@ -161,11 +165,12 @@ def main():
     time.sleep(5)
 
     print("\n=== DNS Tests ===")
+    dns_results = []
     for ns in NAMESPACES:
         for idx in range(1, PODS_PER_NS + 1):
             p_name = podname(ns, idx)
-            print(f"DNS test for {p_name} in {ns}: ", end="")
-            test_dns(ns, p_name)
+            allowed = test_dns(ns, p_name)
+            dns_results.append((ns, p_name, allowed))
             pod_ip = get_pod_ip(ns, p_name)
             pod_ips[(ns, idx)] = pod_ip
             print(f"Pod IP for {p_name}: {pod_ip}")
@@ -175,25 +180,14 @@ def main():
             if lbl not in dst_labels:
                 dst_labels.append(lbl)
 
+    print("\n=== DNS Summary ===")
+    for ns, pod, allowed in dns_results:
+        result = "ALLOWED" if allowed else "BLOCKED"
+        print(f"{ns}/{pod}: DNS {result}")
+
     results_matrix = [[False for _ in dst_labels] for _ in src_labels]
     allowed_set = set()
     print("\n=== Connectivity matrix (ping, parallel) ===")
-
-    def test_dns(namespace, podname):
-        print(f"Testing DNS in {namespace} ({podname}) ... ", end="")
-        res = exec_pod(namespace, podname, f"nslookup {TEST_DOMAIN}")
-        if "Name:" in res or "name =" in res:
-            print("✅ DNS OK")
-            return True
-        else:
-            print("❌ DNS BLOCKED")
-            return False
-
-    def test_ping(src_ns, src_idx, dst_ns, dst_idx, dst_ip):
-        src_pod = podname(src_ns, src_idx)
-        res = exec_pod(src_ns, src_pod, f"ping -c 3 -w 5 {dst_ip}")
-        allowed = "0% packet loss" in res or "1 received" in res or "2 received" in res or "3 received" in res
-        return allowed
 
     test_cases = []
     for src_ns in NAMESPACES:
@@ -216,7 +210,6 @@ def main():
             i = src_labels.index(src_lbl)
             j = dst_labels.index(dst_lbl)
             allowed = future.result()
-            # Debug print for matrix writing:
             print(f"Matrix update: {src_lbl}({i}) -> {dst_lbl}({j}) = {allowed}")
             results_matrix[i][j] = allowed
             if allowed and not (src_lbl == dst_lbl):
