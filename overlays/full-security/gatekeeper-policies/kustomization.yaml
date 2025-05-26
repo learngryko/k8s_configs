@@ -1,4 +1,3 @@
 resources:
-  - gatekeeper.yaml
   - constraints/no-hostpath.yaml
   - constraint-templates/hostpath.yaml
