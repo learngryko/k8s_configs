@@ -7,7 +7,6 @@ NAMESPACES = ["dev", "prod", "monitoring"]
 POD_IMAGE = "nicolaka/netshoot:latest"
 TEST_DOMAIN = "google.com"
 PODS_PER_NS = 2
-NC_TIMEOUT = 10
 DEBUG_LOG_FILE = "debug.log"
 
 def short_name(ns, idx):
@@ -29,7 +28,6 @@ def run(cmd):
 def create_test_pod(namespace, podname):
     print(f"Creating test pod: {podname} in ns {namespace}")
     run(f"kubectl -n {namespace} delete pod {podname} --ignore-not-found")
-    # Each pod runs a TCP server on port 80 for connectivity tests
     pod_yaml = f"""
 apiVersion: v1
 kind: Pod
@@ -39,7 +37,7 @@ spec:
   containers:
     - name: test
       image: {POD_IMAGE}
-      command: ["/bin/sh", "-c", "while true; do nc -l -p 80 -e /bin/cat; done"]
+      command: ["sleep", "3600"]
       securityContext:
         runAsUser: 1000
         allowPrivilegeEscalation: false
@@ -94,17 +92,17 @@ def test_dns(namespace, podname):
         print("❌ DNS BLOCKED")
         return False
 
-def test_nc(src_ns, src_idx, dst_ns, dst_idx, dst_ip, port):
+def test_ping(src_ns, src_idx, dst_ns, dst_idx, dst_ip):
     src_pod = podname(src_ns, src_idx)
-    dst_pod = podname(dst_ns, dst_idx)
-    res = exec_pod(src_ns, src_pod, f"nc -vz -w {NC_TIMEOUT} {dst_ip} {port}")
-    allowed = "open" in res or "succeeded" in res
+    # Try 3 pings, allow if at least one response
+    res = exec_pod(src_ns, src_pod, f"ping -c 3 -w 5 {dst_ip}")
+    allowed = "0% packet loss" in res or "1 received" in res or "2 received" in res or "3 received" in res
     return allowed
 
 def print_matrix_and_summary(results, src_labels, dst_labels, allowed_set):
     # Print header
     cell_width = 10
-    print("\n=== Network Policy Matrix (nc 80) ===")
+    print("\n=== Network Policy Matrix (ping) ===")
     print(" " * (max(len(s) for s in src_labels) + 1), end="")
     for dst in dst_labels:
         print(dst.ljust(cell_width), end="")
@@ -167,8 +165,7 @@ def main():
     # Matrix test cases
     results = []
     allowed_set = set()
-    print("\n=== Connectivity matrix (nc 80, parallel) ===")
-    # Prepare input for parallel
+    print("\n=== Connectivity matrix (ping, parallel) ===")
     test_cases = []
     for src_ns in NAMESPACES:
         for src_idx in range(1, PODS_PER_NS + 1):
@@ -177,18 +174,17 @@ def main():
                 for dst_idx in range(1, PODS_PER_NS + 1):
                     dst_lbl = short_name(dst_ns, dst_idx)
                     dst_ip = pod_ips[(dst_ns, dst_idx)]
-                    test_cases.append( (src_ns, src_idx, dst_ns, dst_idx, dst_ip, 80, src_lbl, dst_lbl) )
+                    test_cases.append((src_ns, src_idx, dst_ns, dst_idx, dst_ip, src_lbl, dst_lbl))
 
-    # Do parallel tests and collect results into matrix
     results_matrix = [[False for _ in dst_labels] for _ in src_labels]
     with concurrent.futures.ThreadPoolExecutor(max_workers=16) as executor:
         future_to_case = {
-            executor.submit(test_nc, *args[:6]): args for args in test_cases
+            executor.submit(test_ping, *args[:5]): args for args in test_cases
         }
         for future in concurrent.futures.as_completed(future_to_case):
             args = future_to_case[future]
-            src_lbl = args[6]
-            dst_lbl = args[7]
+            src_lbl = args[5]
+            dst_lbl = args[6]
             i = src_labels.index(src_lbl)
             j = dst_labels.index(dst_lbl)
             allowed = future.result()
@@ -198,15 +194,6 @@ def main():
 
     print_matrix_and_summary(results_matrix, src_labels, dst_labels, allowed_set)
 
-    print("\n=== Test DEV -> MONITORING (edge case: egress monitoring, port 3100) ===")
-    dev_lbl = short_name("dev", 1)
-    mon_lbl = short_name("monitoring", 1)
-    dev_ip = pod_ips[("dev", 1)]
-    mon_ip = pod_ips[("monitoring", 1)]
-    allowed = test_nc("dev", 1, "monitoring", 1, mon_ip, 3100)
-    edge_str = "ALLOWED" if allowed else "BLOCKED"
-    print(f"{dev_lbl} -> {mon_lbl} (3100): {edge_str}")
-
     print("\n=== Cleanup ===")
     for ns in NAMESPACES:
         for idx in range(1, PODS_PER_NS + 1):
@@ -214,9 +201,9 @@ def main():
 
     print("\n=== Edge case summary ===")
     print("- DNS works only if there is an egress DNS exception")
-    print("- dev -> monitoring: should be ALLOWED if allow-egress-to-monitoring is present")
-    print("- no dev <-> prod, prod <-> dev, monitoring <-> prod etc. communication (zero trust)")
-    print("- intra-namespace communication (dev <-> dev, etc.) as per policies")
+    print("- No dev <-> prod, prod <-> dev, monitoring <-> prod etc. communication (zero trust)")
+    print("- Intra-namespace communication (dev <-> dev, etc.) as per policies")
+    print("- If you want to allow ping, you must allow ICMP in your NetworkPolicies")
 
 if __name__ == "__main__":
     main()
