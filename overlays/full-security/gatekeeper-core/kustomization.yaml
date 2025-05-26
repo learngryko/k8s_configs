@@ -1,7 +1,2 @@
 resources:
   - gatekeeper.yaml
-
-commonAnnotations:
-  argocd.argoproj.io/hook: PostSync
-  argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
-  argocd.argoproj.io/sync-wave: "-1"
