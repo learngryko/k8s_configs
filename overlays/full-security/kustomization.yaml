@@ -2,4 +2,6 @@ resources:
   - namespace-patches/calico-system.yaml
   - ../native-only
 
+  # Gatekeeper
+  - ./gatekeeper
 
