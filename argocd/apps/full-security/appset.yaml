@@ -27,7 +27,7 @@ spec:
     spec:
       project: default
       source:
-        repoURL: git@your-repo-url
+        repoURL: https://github.com/learngryko/k8s_configs
         targetRevision: HEAD
         path: '{{path}}'
       destination:
