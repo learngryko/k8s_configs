@@ -1,4 +1,4 @@
 resources:
   - constraint-templates/
-  - delay-job.yaml
+  - wait-for-template-registration.yaml
   - constraints/
