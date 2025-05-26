@@ -87,7 +87,7 @@ def test_dns(namespace, podname):
     res = exec_pod(namespace, podname, f"nslookup {TEST_DOMAIN}")
     allowed = "Name:" in res or "name =" in res
     with open(DEBUG_LOG_FILE, "a") as dbg:
-        print(f"DNS Test: {namespace}/{podname} -> {TEST_DOMAIN} | ALLOWED: {allowed}")
+        dbg.write(f"DNS Test: {namespace}/{podname} -> {TEST_DOMAIN} | ALLOWED: {allowed}")
         dbg.write(f"Raw output:\n{res.strip()}\n---")
     with open(DEBUG_LOG_FILE, "a") as dbg:
         dbg.write(f"[RESULT] DNS {namespace}/{podname}: ALLOWED={allowed}\n")
@@ -217,7 +217,8 @@ def main():
             i = src_labels.index(src_lbl)
             j = dst_labels.index(dst_lbl)
             allowed = future.result()
-            print(f"Matrix update: {src_lbl}({i}) -> {dst_lbl}({j}) = {allowed}")
+            with open(DEBUG_LOG_FILE, "a") as dbg:
+                dbg.write(f"Matrix update: {src_lbl}({i}) -> {dst_lbl}({j}) = {allowed}")
             results_matrix[i][j] = allowed
             if allowed and not (src_lbl == dst_lbl):
                 allowed_set.add((src_lbl, dst_lbl))
