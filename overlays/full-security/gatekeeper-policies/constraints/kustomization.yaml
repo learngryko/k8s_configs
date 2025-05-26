@@ -1,5 +1,3 @@
 resources:
-  - no-hostpath.yaml
-
-commonAnnotations:
-  argocd.argoproj.io/sync-wave: "1"
+  - k8snohostpath-template.yaml
+  - deny-hostpath.yaml
