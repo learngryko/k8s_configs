@@ -93,18 +93,23 @@ def test_dns(namespace, podname):
 
 def parse_ping_result(output):
     debug_reason = []
+    # First, block if 100% packet loss
+    if "100% packet loss" in output:
+        debug_reason.append("100% packet loss detected")
+        return False, debug_reason
     if "0% packet loss" in output:
-        debug_reason.append("Found '0% packet loss'")
+        debug_reason.append("0% packet loss")
         return True, debug_reason
-    for x in ["1 received", "2 received", "3 received"]:
-        if x in output:
-            debug_reason.append(f"Found '{x}'")
-            return True, debug_reason
+    if "1 received" in output or "2 received" in output or "3 received" in output:
+        debug_reason.append("Some packets received")
+        return True, debug_reason
+    # Try generic 'bytes from' check, in case different ping versions
     if "bytes from" in output:
-        debug_reason.append("Found 'bytes from'")
+        debug_reason.append("ICMP reply detected (bytes from)")
         return True, debug_reason
-    debug_reason.append("No valid ICMP response")
+    debug_reason.append("No ICMP response or output unclear")
     return False, debug_reason
+
 
 def test_ping(src_ns, src_idx, dst_ns, dst_idx, dst_ip):
     src_pod = podname(src_ns, src_idx)
