@@ -24,9 +24,9 @@ spec:
     - target: admission.k8s.gatekeeper.sh
       rego: |
         package k8snohostpath
+
         violation[{"msg": msg}] {
-          container := input.review.object.spec.containers[_]
-          volumeMount := input.review.object.spec.volumes[_]
-          volumeMount.hostPath
-          msg := "hostPath usage is not allowed"
+          volume := input.review.object.spec.volumes[_]
+          volume.hostPath
+          msg := sprintf("hostPath volume %v is not allowed", [volume.name])
         }
