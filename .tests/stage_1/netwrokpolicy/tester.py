@@ -16,11 +16,14 @@ def podname(ns, idx):
     return f"test-pod-{idx}-{ns}"
 
 def run(cmd):
+    # Run a shell command and return output as string
     try:
         out = subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT, timeout=30)
         return out.decode()
     except subprocess.CalledProcessError as e:
         return e.output.decode()
+    except subprocess.TimeoutExpired:
+        return "[TIMEOUT]"
     except Exception as ex:
         return str(ex)
 
@@ -33,9 +36,6 @@ kind: Pod
 metadata:
   name: {podname}
 spec:
-  securityContext:
-    runAsNonRoot: true
-    fsGroup: 2000
   containers:
     - name: test
       image: {POD_IMAGE}
@@ -43,16 +43,20 @@ spec:
       securityContext:
         runAsUser: 1000
         runAsGroup: 3000
-        runAsNonRoot: true
         allowPrivilegeEscalation: false
         capabilities:
           drop: ["ALL"]
+        runAsNonRoot: true
         seccompProfile:
           type: RuntimeDefault
+  securityContext:
+    runAsNonRoot: true
+    fsGroup: 2000
 """
     with open(f"/tmp/{podname}.yaml", "w") as f:
         f.write(pod_yaml)
     run(f"kubectl -n {namespace} apply -f /tmp/{podname}.yaml")
+    # Wait until pod is Running
     for _ in range(30):
         pods = run(f"kubectl -n {namespace} get pods -o name")
         if f"pod/{podname}" not in pods:
@@ -62,19 +66,9 @@ spec:
         if "Running" in phase:
             return True
         time.sleep(1)
-    # DEBUG BLOCK
-    print(f"[ERROR] Pod {podname} did not start in ns {namespace} (see debug.log)")
-    with open(DEBUG_LOG_FILE, "a") as dbg:
-        dbg.write(f"\n\n[DEBUG] Pod {namespace}/{podname} failed to start\n")
-        dbg.write("---- describe pod ----\n")
-        dbg.write(run(f"kubectl -n {namespace} describe pod {podname}"))
-        dbg.write("\n---- events ----\n")
-        dbg.write(run(f"kubectl -n {namespace} get events --field-selector involvedObject.name={podname} -o wide"))
-        dbg.write("\n---- logs ----\n")
-        dbg.write(run(f"kubectl -n {namespace} logs {podname}"))
-        dbg.write("\n---- yaml ----\n")
-        dbg.write(run(f"kubectl -n {namespace} get pod {podname} -o yaml"))
-    print(f"Check debug.log for details.")
+    logs = run(f"kubectl -n {namespace} describe pod {podname}")
+    print(f"[ERROR] Pod {podname} did not start in ns {namespace}")
+    print(logs)
     return False
 
 def delete_test_pod(namespace, podname):
@@ -84,16 +78,26 @@ def get_pod_ip(namespace, podname):
     ip = run(f"kubectl -n {namespace} get pod {podname} -o=jsonpath='{{.status.podIP}}'")
     return ip.strip()
 
-def exec_pod(namespace, podname, cmd):
+def exec_pod(namespace, podname, cmd, timeout=10):
+    # Execute a command in a pod and log to file only.
     full_cmd = f"kubectl -n {namespace} exec {podname} -- {cmd}"
-    result = run(full_cmd)
+    try:
+        result = subprocess.check_output(full_cmd, shell=True, stderr=subprocess.STDOUT, timeout=timeout)
+        output = result.decode()
+    except subprocess.CalledProcessError as e:
+        output = e.output.decode()
+    except subprocess.TimeoutExpired:
+        output = "[TIMEOUT]"
     with open(DEBUG_LOG_FILE, "a") as dbg:
-        dbg.write(f"[DEBUG] exec {namespace}/{podname}: {cmd} => {repr(result)}\n")
-    return result
+        dbg.write(f"[DEBUG] exec {namespace}/{podname}: {cmd} => {repr(output)}\n")
+    return output
 
 def test_dns(namespace, podname):
     print(f"Testing DNS in {namespace} ({podname}) ... ", end="")
     res = exec_pod(namespace, podname, f"nslookup {TEST_DOMAIN}")
+    # Log every DNS test with result
+    with open(DEBUG_LOG_FILE, "a") as dbg:
+        dbg.write(f"[TEST_DNS] {podname} nslookup {TEST_DOMAIN} ->\n{res}\n")
     if "Name:" in res or "name =" in res:
         print("✅ DNS OK")
         return True
@@ -103,27 +107,42 @@ def test_dns(namespace, podname):
 
 def test_ping(src_ns, src_idx, dst_ns, dst_idx, dst_ip):
     src_pod = podname(src_ns, src_idx)
-    res = exec_pod(src_ns, src_pod, f"ping -c 3 -w 5 {dst_ip}")
-    if "0% packet loss" in res or "1 received" in res or "2 received" in res or "3 received" in res:
+    res = exec_pod(src_ns, src_pod, f"ping -c 3 -w 5 {dst_ip}", timeout=10)
+    # Write each ping result to debug.log (and to stdout)
+    with open(DEBUG_LOG_FILE, "a") as dbg:
+        dbg.write(f"[TEST_PING] {src_pod} -> {dst_ip}\n")
+        dbg.write(res + "\n")
+    if "[TIMEOUT]" in res or res.strip() == "":
+        print(f"{src_pod} -> {dst_ip}: BLOCKED (timeout or no output)")
+        return False
+    # Look for "0 received" or "100% packet loss"
+    if ("0 received" in res or "100% packet loss" in res):
+        print(f"{src_pod} -> {dst_ip}: BLOCKED")
+        return False
+    # If at least one "received", it's allowed
+    if ("1 received" in res or "2 received" in res or "3 received" in res or "0% packet loss" in res or "ttl=" in res):
         print(f"{src_pod} -> {dst_ip}: ALLOWED")
         return True
-    print(f"{src_pod} -> {dst_ip}: BLOCKED")
+    # fallback, mark as blocked if unsure
+    print(f"{src_pod} -> {dst_ip}: BLOCKED (unknown result)")
     return False
 
-
 def print_matrix_and_summary(results, src_labels, dst_labels, allowed_set):
-    cell_width = 10
+    # Print header
+    cell_width = 13
     print("\n=== Network Policy Matrix (ping) ===")
     print(" " * (max(len(s) for s in src_labels) + 1), end="")
     for dst in dst_labels:
         print(dst.ljust(cell_width), end="")
     print()
+    # Print each row
     for i, src in enumerate(src_labels):
         print(src.ljust(max(len(s) for s in src_labels) + 1), end="")
         for j, dst in enumerate(dst_labels):
             cell = "ALLOWED" if results[i][j] else "BLOCKED"
             print(cell.ljust(cell_width), end="")
         print()
+    # Summarize
     total = len(src_labels) * len(dst_labels)
     allowed = sum(sum(row) for row in results)
     blocked = total - allowed
@@ -139,8 +158,10 @@ def print_matrix_and_summary(results, src_labels, dst_labels, allowed_set):
         print("No unexpected ALLOWED connections.\n")
 
 def main():
-    open(DEBUG_LOG_FILE, "w").close()
-    pod_ips = {}
+    open(DEBUG_LOG_FILE, "w").close()  # Clean log
+
+    # Prepare pod structures
+    pod_ips = {}  # (ns, idx) -> ip
     src_labels = []
     dst_labels = []
 
@@ -169,7 +190,7 @@ def main():
             if lbl not in dst_labels:
                 dst_labels.append(lbl)
 
-    results = []
+    # Matrix test cases
     allowed_set = set()
     print("\n=== Connectivity matrix (ping, parallel) ===")
     test_cases = []
@@ -195,7 +216,7 @@ def main():
             j = dst_labels.index(dst_lbl)
             allowed = future.result()
             results_matrix[i][j] = allowed
-            if allowed and not (src_lbl == dst_lbl):
+            if allowed and not (src_lbl == dst_lbl):  # skip self-test for now
                 allowed_set.add((src_lbl, dst_lbl))
 
     print_matrix_and_summary(results_matrix, src_labels, dst_labels, allowed_set)
