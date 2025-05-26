@@ -6,74 +6,109 @@
 
 ## ❗️ Wymagania krytyczne  
 > **UWAGA:**  
-> Polityki NetworkPolicy w Kubernetes **NIE DZIAŁAJĄ bez zainstalowanego CNI obsługującego policy**, np. Calico, Cilium, Antrea.  
-> Sam “czysty” klaster (np. z kube-proxy/flannel bez policy) *ignoruje* te polityki – sieć pozostaje otwarta!  
->  
-> **Aby wyegzekwować polityki sieciowe, MUSISZ zainstalować Calico lub podobny plugin!**
-
+> Polityki NetworkPolicy w Kubernetes **DZIAŁAJĄ**, ponieważ **Calico został zainstalowany wraz z klastrem w Rancherze**.  
 ---
 
 ## 🎯 Cel  
-
-- Zbudować “zero trust” – blokować ruch domyślnie wszędzie (ingress/egress), otwierać tylko to, co konieczne.
-- Trzymać całość NetworkPolicy w czytelnych folderach, per-namespace.
-- W overlay `native-only` **aktywować wyłącznie to, co jest zadeklarowane w plikach YAML (nie używać custom resource'ów Calico!)** – masz kontrolę tylko przez NetworkPolicy K8s.
-- Overlay `full-security` może zawierać dodatkowe reguły (np. globalne, zaawansowane CRD Calico itd.).
+- Zbudować “zero trust” – blokować wszystko domyślnie, otwierać tylko to, co wymagane.
+- Folderowa organizacja per-namespace.
+- `native-only` = tylko czyste NetworkPolicy (bez Calico CRD).
+- `full-security` = rozszerzenia i CRD dozwolone.
 
 ---
 
-## 📐 Założenia
+## 📐 Założenia  
 
-- Namespace: `dev`, `prod`, `monitoring`
-- Ruch cross-namespace: tylko tam, gdzie NetworkPolicy na to pozwala
-- **Każdy namespace**:
-  - polityka deny-all (ingress+egress)
-  - wyjątek DNS
-  - wyjątek monitoring
-  - opcjonalnie egress na monitoring (np. do pushowania logów)
-  - dodatkowe wyjątki (np. ArgoCD, ingress) jeśli trzeba
+Namespace: `dev`, `prod`, `monitoring`  
+- Domyślny `deny-all` (ingress+egress) w każdym namespace  
+- Wyjątki:
+  - DNS tylko w `dev`
+  - egress `dev → monitoring` dla logów
+  - ingress `monitoring` z `dev` i `prod`
+  - `dev → dev` dozwolone
+  - `monitoring` nie ma egress – tylko odbiera
 
+---
 
 ## ✅ Kroki wdrożeniowe
 
-1. Utwórz strukturę folderów (per namespace).
-2. Wklej powyższe pliki z odpowiednimi labelami.
-3. Uzupełnij kustomization.yaml.
-4. Dodaj/uzupełnij labele do Namespace.
-5. Commit + push (ArgoCD zrobi resztę).
-6. Przetestuj connectivity testerem i poleceniami kubectl.
+1. Sprawdź, czy polityki są zdefiniowane dla każdego namespace:
+   - default-deny
+   - allow-egress/ingress (jeśli potrzebne)
+   - allow-dns tylko tam, gdzie wymagane
+2. Upewnij się, że każdy namespace ma label `name: <ns>`.
+3. Commit + push → ArgoCD zaktualizuje stan.
+4. Przetestuj (poniżej wyniki ostatniego testu).
 
 ---
 
-## 🧪 Testy
+## 🧾 Pliki konfiguracyjne (opis)
 
-- Brak połączenia `podA → podB` w tym samym namespace (zero trust).
-- `nslookup` działa tylko tam, gdzie jest allow-dns.
-- `dev → monitoring` (Loki push) = OK, jeśli masz allow-egress-to-monitoring.
-- `monitoring → dev` oraz `monitoring → prod` (Prometheus scrape) = OK, jeśli masz allow-monitoring.
+### `dev/`
+- `default-deny.yaml`: blokuje cały ruch
+- `allow-dns.yaml`: umożliwia zapytania DNS do kube-dns
+- `allow-egress-to-monitoring.yaml`: zezwala na egress do monitoring
+- `allow-egress-to-dev.yaml`: zezwala na egress do własnego namespace
+- `allow-dev-to-self.yaml`: pozwala na komunikację pomiędzy podami w `dev`
+- `kustomization.yaml`: łączy powyższe pliki
 
----
+### `monitoring/`
+- `default-deny.yaml`: blokuje cały ruch
+- `allow-from-prod-and-dev.yaml`: zezwala na połączenia przychodzące z `dev` i `prod`
+- `kustomization.yaml`: łączy polityki monitoringu
 
-## 🧠 Dodatkowe uwagi
-
-- Jeśli ArgoCD lub ingress działa w osobnym namespace, dodaj wyjątek.
-- Każdy namespace musi mieć label `name: <ns>`, żeby działały namespaceSelector.
-- Overlay “full-security” może mieć własne, dodatkowe polityki (np. custom resource Calico), ale overlay “native-only” korzysta wyłącznie z czystego NetworkPolicy.
-
----
-
-**PAMIĘTAJ:**
-> **NetworkPolicy NIE DZIAŁA bez Calico, Cilium, Antrea lub innego CNI obsługującego polityki!**
-> 
-> Po zainstalowaniu Calico polityki zaczną działać natychmiast, tylko w ramach tego co zadeklarujesz w YAML (overlay native-only = tylko K8s NetworkPolicy, bez custom CRD Calico).
+### `prod/`
+- `default-deny.yaml`: blokuje cały ruch
+- `allow-egress-to-monitoring.yaml`: zezwala na egress z `prod` do `monitoring`
+- `kustomization.yaml`: łączy polityki `prod`
 
 ---
 
-## 🔁 Full-security vs native-only (quick summary)
+## 🧪 Wyniki testów (ostatnie uruchomienie)
 
-- **native-only**:  
-  - tylko standardowe NetworkPolicy K8s (to, co jest w plikach powyżej)
-  - działa tylko na CNI z obsługą policy (np. Calico, ale bez użycia zaawansowanych CRD)
-- **full-security**:  
-  - możesz dodać zaawansowane polityki, np. Calico GlobalNetworkPolicy, custom labels itd.
-  - możesz integrować OPA Gatekeeper, Falco, Trivy, itp.
+### DNS Summary
+```
+dev/test-pod-1-dev:          DNS ALLOWED  
+dev/test-pod-2-dev:          DNS ALLOWED  
+prod/test-pod-1-prod:        DNS BLOCKED  
+prod/test-pod-2-prod:        DNS BLOCKED  
+monitoring/test-pod-1:       DNS BLOCKED  
+monitoring/test-pod-2:       DNS BLOCKED  
+```
+
+### Network Policy Matrix (ping)
+```
+                dev-1   dev-2   prod-1  prod-2  monitoring-1  monitoring-2
+dev-1           ✅       ✅       ❌       ❌       ✅             ✅
+dev-2           ✅       ✅       ❌       ❌       ✅             ✅
+prod-1          ❌       ❌       ✅       ❌       ✅             ✅
+prod-2          ❌       ❌       ❌       ✅       ✅             ✅
+monitoring-1    ❌       ❌       ❌       ❌       ✅             ❌
+monitoring-2    ❌       ❌       ❌       ❌       ❌             ✅
+```
+
+### Podsumowanie testu
+```
+Total connections tested: 36  
+BLOCKED: 20  
+ALLOWED: 16
+```
+
+### Unexpectedly ALLOWED connections:
+```
+- prod-2 → monitoring-1  
+- dev-1 → dev-2  
+- prod-1 → monitoring-2  
+- dev-2 → monitoring-1  
+- dev-1 → monitoring-1  
+- prod-2 → monitoring-2  
+- dev-1 → monitoring-2  
+- dev-2 → dev-1  
+- prod-1 → monitoring-1  
+- dev-2 → monitoring-2  
+```
+
+> ❗️ **Uwaga:** Powyższe wyniki są zgodne z aktualnie wdrożonymi politykami – wszystkie połączenia są świadomie dozwolone na tym etapie.
+
+---
+
