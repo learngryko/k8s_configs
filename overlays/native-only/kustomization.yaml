@@ -17,9 +17,7 @@ resources:
   - rbac/monitoring/role-ops.yaml
   - rbac/monitoring/bindings.yaml
 
-
-
 patches:
-  - namespace-patches/prod.yaml
-  - namespace-patches/dev.yaml
-  - namespace-patches/monitoring.yaml
+  - path: namespace-patches/prod.yaml
+  - path: namespace-patches/dev.yaml
+  - path: namespace-patches/monitoring.yaml
