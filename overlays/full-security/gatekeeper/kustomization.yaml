@@ -1,4 +1,4 @@
 resources:
   - base/
-  - constraints/no-hostpath.yaml
-  - constraint-templates/hostpath.yaml
+  - constraints/
+  - constraint-templates/
