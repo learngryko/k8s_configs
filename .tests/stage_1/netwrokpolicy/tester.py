@@ -81,6 +81,7 @@ def exec_pod(namespace, podname, cmd):
         dbg.write(f"[DEBUG] exec {namespace}/{podname}: {cmd} => {repr(result)}\n")
     return result
 
+
 def parse_ping_result(output):
     # Try to decide if ICMP worked based on typical ping output
     debug_reason = []
@@ -177,6 +178,22 @@ def main():
     results_matrix = [[False for _ in dst_labels] for _ in src_labels]
     allowed_set = set()
     print("\n=== Connectivity matrix (ping, parallel) ===")
+
+    def test_dns(namespace, podname):
+        print(f"Testing DNS in {namespace} ({podname}) ... ", end="")
+        res = exec_pod(namespace, podname, f"nslookup {TEST_DOMAIN}")
+        if "Name:" in res or "name =" in res:
+            print("✅ DNS OK")
+            return True
+        else:
+            print("❌ DNS BLOCKED")
+            return False
+
+    def test_ping(src_ns, src_idx, dst_ns, dst_idx, dst_ip):
+        src_pod = podname(src_ns, src_idx)
+        res = exec_pod(src_ns, src_pod, f"ping -c 3 -w 5 {dst_ip}")
+        allowed = "0% packet loss" in res or "1 received" in res or "2 received" in res or "3 received" in res
+        return allowed
 
     test_cases = []
     for src_ns in NAMESPACES:
