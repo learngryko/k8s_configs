@@ -4,7 +4,7 @@ import time
 import concurrent.futures
 
 NAMESPACES = ["dev", "prod", "monitoring"]
-POD_IMAGE = "busybox:1.35.0"
+POD_IMAGE = "nicolaka/netshoot:latest"
 TEST_DOMAIN = "google.com"
 PODS_PER_NS = 2
 NC_TIMEOUT = 10
@@ -39,7 +39,7 @@ spec:
   containers:
     - name: test
       image: {POD_IMAGE}
-      command: ["/bin/sh", "-c", "nc -lk -p 80 & sleep 3600"]
+      command: ["/bin/sh", "-c", "while true; do nc -l -p 80 -e /bin/cat; done"]
       securityContext:
         runAsUser: 1000
         allowPrivilegeEscalation: false
