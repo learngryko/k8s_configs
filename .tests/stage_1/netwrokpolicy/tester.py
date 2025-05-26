@@ -104,8 +104,12 @@ def test_dns(namespace, podname):
 def test_ping(src_ns, src_idx, dst_ns, dst_idx, dst_ip):
     src_pod = podname(src_ns, src_idx)
     res = exec_pod(src_ns, src_pod, f"ping -c 3 -w 5 {dst_ip}")
-    allowed = "0% packet loss" in res or "1 received" in res or "2 received" in res or "3 received" in res
-    return allowed
+    if "0% packet loss" in res or "1 received" in res or "2 received" in res or "3 received" in res:
+        print(f"{src_pod} -> {dst_ip}: ALLOWED")
+        return True
+    print(f"{src_pod} -> {dst_ip}: BLOCKED")
+    return False
+
 
 def print_matrix_and_summary(results, src_labels, dst_labels, allowed_set):
     cell_width = 10
