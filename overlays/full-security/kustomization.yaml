@@ -3,6 +3,7 @@ resources:
   - ../native-only
 
   # Gatekeeper
-  - ./gatekeeper
+  - gatekeeper-core/
+  - gatekeeper-policies/
 
 
