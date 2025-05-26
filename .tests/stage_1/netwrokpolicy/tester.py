@@ -9,6 +9,7 @@ TEST_DOMAIN = "google.com"
 PODS_PER_NS = 2
 DEBUG_LOG_FILE = "debug.log"
 
+
 def short_name(ns, idx):
     return f"{ns}-{idx}"
 
@@ -64,7 +65,8 @@ spec:
         time.sleep(1)
     logs = run(f"kubectl -n {namespace} describe pod {podname}")
     print(f"[ERROR] Pod {podname} did not start in ns {namespace}")
-    print(logs)
+    with open(DEBUG_LOG_FILE, "a") as dbg:
+        dbg.write(logs)
     return False
 
 def delete_test_pod(namespace, podname):
@@ -84,9 +86,9 @@ def exec_pod(namespace, podname, cmd):
 def test_dns(namespace, podname):
     res = exec_pod(namespace, podname, f"nslookup {TEST_DOMAIN}")
     allowed = "Name:" in res or "name =" in res
-    # Print and log interpretation
-    print(f"DNS Test: {namespace}/{podname} -> {TEST_DOMAIN} | ALLOWED: {allowed}")
-    print(f"Raw output:\n{res.strip()}\n---")
+    with open(DEBUG_LOG_FILE, "a") as dbg:
+        print(f"DNS Test: {namespace}/{podname} -> {TEST_DOMAIN} | ALLOWED: {allowed}")
+        dbg.write(f"Raw output:\n{res.strip()}\n---")
     with open(DEBUG_LOG_FILE, "a") as dbg:
         dbg.write(f"[RESULT] DNS {namespace}/{podname}: ALLOWED={allowed}\n")
     return allowed
@@ -115,9 +117,9 @@ def test_ping(src_ns, src_idx, dst_ns, dst_idx, dst_ip):
     src_pod = podname(src_ns, src_idx)
     out = exec_pod(src_ns, src_pod, f"ping -c 3 -w 5 {dst_ip}")
     allowed, debug_reason = parse_ping_result(out)
-    print(f"Ping Test: {src_pod} ({src_ns}) -> {dst_ip} (of {dst_ns}) | ALLOWED: {allowed} | Reason: {debug_reason}")
-    print(f"Raw output:\n{out.strip()}\n---")
     with open(DEBUG_LOG_FILE, "a") as dbg:
+        dbg.write(f"Ping Test: {src_pod} ({src_ns}) -> {dst_ip} (of {dst_ns}) | ALLOWED: {allowed} | Reason: {debug_reason}")
+        dbg.write(f"Raw output:\n{out.strip()}\n---")
         dbg.write(f"[RESULT] PING {src_pod} -> {dst_ip} : ALLOWED={allowed}, reason={debug_reason}\n")
     return allowed
 
