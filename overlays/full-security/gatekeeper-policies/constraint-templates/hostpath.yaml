@@ -4,6 +4,9 @@ metadata:
   name: k8snohostpath
   annotations:
     argocd.argoproj.io/sync-wave: "0"
+  labels:
+    app.kubernetes.io/component: gatekeeper
+    app.kubernetes.io/part-of: full-security
 spec:
   crd:
     spec:
