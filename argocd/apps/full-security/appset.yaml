@@ -13,9 +13,6 @@ spec:
           - name: gatekeeper-policies
             path: overlays/full-security/gatekeeper-policies
             wave: "1"
-          - name: calico
-            path: overlays/full-security/calico
-            wave: "2"
           - name: namespace-patches
             path: overlays/full-security/namespace-patches
             wave: "3"
