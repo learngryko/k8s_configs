@@ -1,4 +1,3 @@
 resources:
   - constraint-templates/
-  - wait-for-template-registration.yaml
   - constraints/
