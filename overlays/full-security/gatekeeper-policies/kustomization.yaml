@@ -1,4 +1,4 @@
 resources:
-  - delay-job.yaml
   - constraint-templates/
+  - delay-job.yaml
   - constraints/

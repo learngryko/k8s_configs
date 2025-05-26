@@ -1,21 +1,17 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: delay-gatekeeper-crd
+  name: wait-for-gatekeeper-crd
   namespace: gatekeeper-system
   annotations:
     argocd.argoproj.io/hook: PreSync
     argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
-    argocd.argoproj.io/sync-wave: "0"
-  labels:
-    app.kubernetes.io/component: gatekeeper
-    app.kubernetes.io/part-of: full-security
-
+    argocd.argoproj.io/sync-wave: "1"
 spec:
   template:
     spec:
       containers:
         - name: sleeper
           image: busybox
-          command: ["sleep", "15"]
+          command: ["sh", "-c", "echo waiting... && sleep 15"]
       restartPolicy: Never
