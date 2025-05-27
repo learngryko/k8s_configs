@@ -1,6 +1,6 @@
 - macro: allowed_k8s_api_connections
   condition: >
-    proc.name in (system-upgrade-, calico-typha, snapshot-contro)
+    proc.name in (system-upgrade-, calico-typha, snapshot-contro, argocd-server)
 
 - rule: Unexpected K8s API Connection (custom)
   desc: Detect unexpected K8s API server access, excluding known good ones
