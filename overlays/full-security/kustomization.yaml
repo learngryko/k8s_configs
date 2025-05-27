@@ -6,4 +6,6 @@ resources:
   - gatekeeper-core/
   - gatekeeper-policies/
 
+  - falco/
+
 
