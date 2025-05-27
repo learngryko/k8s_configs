@@ -15,9 +15,8 @@ spec:
             path: overlays/full-security/gatekeeper/gatekeeper-policies
             namespace: gatekeeper-system
             wave: "1"
-          - name: namespace-patches
+          - name: fullserurity
             path: overlays/full-security/namespace-patches
-            namespace: gatekeeper-system
             wave: "1"
           - name: falco
             path: overlays/full-security/falco

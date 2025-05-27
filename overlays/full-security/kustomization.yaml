@@ -1,11 +1,4 @@
 resources:
-  - namespace-patches/calico-system.yaml
   - ../native-only
-
-  # Gatekeeper
-  - gatekeeper-core/
-  - gatekeeper-policies/
-
-  - falco/
-
-
+  - namespace-patches/calico-system.yaml
+  - namespace-patches/falco-system.yaml
