@@ -7,3 +7,10 @@ spec:
     kinds:
       - apiGroups: [""]
         kinds: ["Pod"]
+parameters:
+  limits:
+    - cpu
+    - memory
+  requests:
+    - cpu
+    - memory
