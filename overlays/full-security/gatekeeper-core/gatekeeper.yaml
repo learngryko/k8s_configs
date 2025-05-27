@@ -45,7 +45,6 @@ spec:
     listKind: AssignList
     plural: assign
     singular: assign
-  preserveUnknownFields: false
   scope: Cluster
   versions:
   - name: v1
@@ -1127,7 +1126,6 @@ spec:
     listKind: AssignImageList
     plural: assignimage
     singular: assignimage
-  preserveUnknownFields: false
   scope: Cluster
   versions:
   - name: v1alpha1
@@ -1471,7 +1469,6 @@ spec:
     listKind: AssignMetadataList
     plural: assignmetadata
     singular: assignmetadata
-  preserveUnknownFields: false
   scope: Cluster
   versions:
   - name: v1
@@ -2400,7 +2397,6 @@ spec:
     listKind: ConfigPodStatusList
     plural: configpodstatuses
     singular: configpodstatus
-  preserveUnknownFields: false
   scope: Namespaced
   versions:
   - name: v1beta1
@@ -2472,7 +2468,6 @@ spec:
     listKind: ConfigList
     plural: configs
     singular: config
-  preserveUnknownFields: false
   scope: Namespaced
   versions:
   - name: v1alpha1
@@ -2624,7 +2619,6 @@ spec:
     listKind: ConstraintPodStatusList
     plural: constraintpodstatuses
     singular: constraintpodstatus
-  preserveUnknownFields: false
   scope: Namespaced
   versions:
   - name: v1beta1
@@ -2722,7 +2716,6 @@ spec:
     listKind: ConstraintTemplatePodStatusList
     plural: constrainttemplatepodstatuses
     singular: constrainttemplatepodstatus
-  preserveUnknownFields: false
   scope: Namespaced
   versions:
   - name: v1beta1
@@ -2812,7 +2805,6 @@ spec:
     listKind: ConstraintTemplateList
     plural: constrainttemplates
     singular: constrainttemplate
-  preserveUnknownFields: false
   scope: Cluster
   versions:
   - name: v1
@@ -3209,7 +3201,6 @@ spec:
     listKind: ExpansionTemplateList
     plural: expansiontemplate
     singular: expansiontemplate
-  preserveUnknownFields: false
   scope: Cluster
   versions:
   - name: v1alpha1
@@ -3462,7 +3453,6 @@ spec:
     listKind: ExpansionTemplatePodStatusList
     plural: expansiontemplatepodstatuses
     singular: expansiontemplatepodstatus
-  preserveUnknownFields: false
   scope: Namespaced
   versions:
   - name: v1beta1
@@ -3537,7 +3527,6 @@ spec:
     listKind: ModifySetList
     plural: modifyset
     singular: modifyset
-  preserveUnknownFields: false
   scope: Cluster
   versions:
   - name: v1
@@ -4532,7 +4521,6 @@ spec:
     listKind: MutatorPodStatusList
     plural: mutatorpodstatuses
     singular: mutatorpodstatus
-  preserveUnknownFields: false
   scope: Namespaced
   versions:
   - name: v1beta1
@@ -4612,7 +4600,6 @@ spec:
     listKind: ProviderList
     plural: providers
     singular: provider
-  preserveUnknownFields: false
   scope: Cluster
   versions:
   - deprecated: true
@@ -4713,7 +4700,6 @@ spec:
     listKind: SyncSetList
     plural: syncsets
     singular: syncset
-  preserveUnknownFields: false
   scope: Cluster
   versions:
   - name: v1alpha1
