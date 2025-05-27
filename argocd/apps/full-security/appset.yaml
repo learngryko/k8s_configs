@@ -32,7 +32,7 @@ spec:
         path: '{{path}}'
       destination:
         server: https://kubernetes.default.svc
-        namespace: gatekeeper-system
+        namespace: '{{if eq name "falco"}}falco{{else}}gatekeeper-system{{end}}'
       syncPolicy:
         automated:
           prune: true
