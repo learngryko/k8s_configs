@@ -7,21 +7,21 @@ spec:
   generators:
     - list:
         elements:
+          - name: fullserurity-base
+            path: overlays/full-security
+            wave: "0"
           - name: gatekeeper-core
             path: overlays/full-security/gatekeeper/gatekeeper-core
             namespace: gatekeeper-system
-            wave: "0"
+            wave: "1"
           - name: gatekeeper-policies
             path: overlays/full-security/gatekeeper/gatekeeper-policies
             namespace: gatekeeper-system
-            wave: "1"
-          - name: fullserurity
-            path: overlays/full-security
-            wave: "1"
+            wave: "2"
           - name: falco
             path: overlays/full-security/falco
             namespace: falco
-            wave: "1"
+            wave: "3"
   template:
     metadata:
       name: '{{name}}'
