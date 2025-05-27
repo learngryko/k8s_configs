@@ -1,13 +1,14 @@
 #!/bin/bash
 
 NAMESPACE="default"
+LOGFILE="tester.log"
 OK=0
 FAIL=0
 
 declare -A SUMMARY
 
 print_test() {
-  echo -e "\n\033[1;34m$1\033[0m"
+  echo -e "\n\033[1;34m$1\033[0m" | tee -a "$LOGFILE"
 }
 
 run_and_check() {
@@ -16,24 +17,24 @@ run_and_check() {
   local expect_fail="$3"
 
   print_test "Test: $name"
-  output=$(echo "$manifest" | kubectl apply -n "$NAMESPACE" -f - 2>&1)
+  output=$(echo "$manifest" | kubectl apply -n "$NAMESPACE" -f - 2>&1 | tee -a "$LOGFILE")
   if [[ $output =~ "Error from server" ]]; then
     if [[ "$expect_fail" == "yes" ]]; then
-      echo -e "\033[0;32m✅ Oczekiwany błąd: polityka działa\033[0m"
+      echo -e "\033[0;32m✅ Oczekiwany błąd: polityka działa\033[0m" | tee -a "$LOGFILE"
       SUMMARY["$name"]="✅"
       ((OK++))
     else
-      echo -e "\033[0;31m❌ NIEPOŻĄDANY błąd! $output\033[0m"
+      echo -e "\033[0;31m❌ NIEPOŻĄDANY błąd! $output\033[0m" | tee -a "$LOGFILE"
       SUMMARY["$name"]="❌"
       ((FAIL++))
     fi
   else
     if [[ "$expect_fail" == "yes" ]]; then
-      echo -e "\033[0;31m❌ BRAK błędu: polityka NIE DZIAŁA\033[0m"
+      echo -e "\033[0;31m❌ BRAK błędu: polityka NIE DZIAŁA\033[0m" | tee -a "$LOGFILE"
       SUMMARY["$name"]="❌"
       ((FAIL++))
     else
-      echo -e "\033[0;32m✅ Pod utworzony prawidłowo\033[0m"
+      echo -e "\033[0;32m✅ Pod utworzony prawidłowo\033[0m" | tee -a "$LOGFILE"
       SUMMARY["$name"]="✅"
       ((OK++))
     fi
@@ -184,11 +185,11 @@ run_and_check "automountServiceAccountToken = true" "$BAD_AUTOMOUNT_POD" "yes"
 
 # --- CLEANUP ---
 print_test "Sprzątanie podów..."
-kubectl delete pod valid-pod invalid-registry invalid-hostpath invalid-noresources invalid-noreadonly invalid-automount -n "$NAMESPACE" --wait=false >/dev/null 2>&1
+kubectl delete pod valid-pod invalid-registry invalid-hostpath invalid-noresources invalid-noreadonly invalid-automount -n "$NAMESPACE" --wait=false >/dev/null 2>&1 | tee -a "$LOGFILE"
 
 # --- SUMMARY ---
 print_test "PODSUMOWANIE"
 for k in "${!SUMMARY[@]}"; do
-  echo -e "${SUMMARY[$k]}\t$k"
+  echo -e "${SUMMARY[$k]}\t$k" | tee -a "$LOGFILE"
 done
-echo -e "\nRazem: \033[0;32m$OK OK\033[0m, \033[0;31m$FAIL błędów\033[0m"
+echo -e "\nRazem: \033[0;32m$OK OK\033[0m, \033[0;31m$FAIL błędów\033[0m" | tee -a "$LOGFILE"
