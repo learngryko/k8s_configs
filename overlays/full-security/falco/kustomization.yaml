@@ -2,4 +2,10 @@ resources:
   - namespace.yaml
   - rbac.yaml
   - falco.yaml
-  - rules
+
+
+configMapGenerator:
+  - name: falco-rules-custom
+    namespace: falco
+    files:
+      - known.yaml=rules/known.yaml
