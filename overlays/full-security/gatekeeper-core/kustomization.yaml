@@ -1,3 +1,7 @@
 resources:
-  - gatekeeper.yaml
-  - constraint-template.yaml
+  - gatekeeper.yaml                                        # installs Gatekeeper core components
+  - constraint-template.yaml                               # denies hostPath volumes (K8sPSPHostFilesystem)
+  - constraint-template-approved-registries.yaml           # ensures only images from trusted registries are allowed
+  - constraint-template-require-resources.yaml             # ensures CPU & memory requests/limits are defined
+  - constraint-template-readonly-rootfs.yaml               # enforces readOnlyRootFilesystem=true for all containers
+  - constraint-template-no-serviceaccount-token.yaml       # prevents auto-mounting of service account tokens

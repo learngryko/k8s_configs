@@ -1,2 +1,6 @@
 resources:
-  - deny-hostpath.yaml
+  - deny-hostpath.yaml                                     # Constraint: deny all usage of hostPath volumes
+  - approved-registries.yaml                               # Constraint: allow only approved container registries
+  - require-resources.yaml                                 # Constraint: require resources.requests and limits
+  - readonly-rootfs.yaml                                   # Constraint: enforce readOnlyRootFilesystem=true
+  - no-serviceaccount-token.yaml                           # Constraint: block automountServiceAccountToken=true
