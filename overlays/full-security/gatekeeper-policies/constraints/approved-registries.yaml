@@ -8,6 +8,6 @@ spec:
       - apiGroups: [""]
         kinds: ["Pod"]
   parameters:
-    allowedRepos:
+    repos:
       - "docker.io/library/"
       - "docker.io/"   
