@@ -1,21 +1,14 @@
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
-  name: full-security-root
+  name: falco-security
   namespace: argocd
 spec:
   generators:
     - list:
         elements:
-          - name: gatekeeper-security
-            path: overlays/full-security/gatekeeper/appset.yaml
-            namespace: argocd
-          - name: falco-security
-            path: overlays/full-security/falco/appset.yaml
-            namespace: argocd
-          - name: calico-patches
-            path: overlays/full-security/namespace-patches
-            namespace: gatekeeper-system
+          - name: falco
+            path: overlays/full-security/falco/falco-core
   template:
     metadata:
       name: '{{name}}'
@@ -27,7 +20,7 @@ spec:
         path: '{{path}}'
       destination:
         server: https://kubernetes.default.svc
-        namespace: '{{namespace}}'
+        namespace: falco
       syncPolicy:
         automated:
           prune: true

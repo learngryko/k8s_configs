@@ -1,24 +1,23 @@
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
-  name: full-security-root
+  name: gatekeeper-security
   namespace: argocd
 spec:
   generators:
     - list:
         elements:
-          - name: gatekeeper-security
-            path: overlays/full-security/gatekeeper/appset.yaml
-            namespace: argocd
-          - name: falco-security
-            path: overlays/full-security/falco/appset.yaml
-            namespace: argocd
-          - name: calico-patches
-            path: overlays/full-security/namespace-patches
-            namespace: gatekeeper-system
+          - name: gatekeeper-core
+            path: overlays/full-security/gatekeeper/gatekeeper-core
+            wave: "0"
+          - name: gatekeeper-policies
+            path: overlays/full-security/gatekeeper/gatekeeper-policies
+            wave: "1"
   template:
     metadata:
       name: '{{name}}'
+      annotations:
+        argocd.argoproj.io/sync-wave: '{{wave}}'
     spec:
       project: security-project
       source:
@@ -27,7 +26,7 @@ spec:
         path: '{{path}}'
       destination:
         server: https://kubernetes.default.svc
-        namespace: '{{namespace}}'
+        namespace: gatekeeper-system
       syncPolicy:
         automated:
           prune: true
