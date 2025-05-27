@@ -1,48 +1,114 @@
 #!/bin/bash
 
-NAMESPACES=("dev" "monitoring" "prod")
+NAMESPACE="default"
+OK=0
+FAIL=0
+
+declare -A SUMMARY
 
 print_test() {
-  echo -e "\n\033[1;34m[Test $1] $2 [$3]\033[0m"
+  echo -e "\n\033[1;34m$1\033[0m"
 }
 
-apply_and_log() {
-  local test_id="$1"
-  local test_desc="$2"
-  local namespace="$3"
-  local manifest="$4"
+run_and_check() {
+  local name="$1"
+  local manifest="$2"
+  local expect_fail="$3"
 
-  print_test "$test_id" "$test_desc" "$namespace"
-  echo "$manifest" | kubectl apply -n "$namespace" -f - 2>&1 | tee /dev/stderr | grep -i "Error from server" >/dev/null \
-    && echo -e "\033[0;32m✅ Oczekiwane: polityka zadziałała\033[0m" \
-    || echo -e "\033[0;31m❌ Błąd: polityka nie zadziałała\033[0m"
+  print_test "Test: $name"
+  output=$(echo "$manifest" | kubectl apply -n "$NAMESPACE" -f - 2>&1)
+  if [[ $output =~ "Error from server" ]]; then
+    if [[ "$expect_fail" == "yes" ]]; then
+      echo -e "\033[0;32m✅ Oczekiwany błąd: polityka działa\033[0m"
+      SUMMARY["$name"]="✅"
+      ((OK++))
+    else
+      echo -e "\033[0;31m❌ NIEPOŻĄDANY błąd! $output\033[0m"
+      SUMMARY["$name"]="❌"
+      ((FAIL++))
+    fi
+  else
+    if [[ "$expect_fail" == "yes" ]]; then
+      echo -e "\033[0;31m❌ BRAK błędu: polityka NIE DZIAŁA\033[0m"
+      SUMMARY["$name"]="❌"
+      ((FAIL++))
+    else
+      echo -e "\033[0;32m✅ Pod utworzony prawidłowo\033[0m"
+      SUMMARY["$name"]="✅"
+      ((OK++))
+    fi
+  fi
 }
 
-for ns in "${NAMESPACES[@]}"; do
-  kubectl get ns "$ns" >/dev/null 2>&1 || kubectl create ns "$ns"
-
-  apply_and_log "1" "Niezatwierdzony rejestr" "$ns" "
+# 1. Poprawny pod
+GOOD_POD="
 apiVersion: v1
 kind: Pod
 metadata:
-  name: test-unapproved-registry
+  name: valid-pod
 spec:
-  containers:
-    - name: test
-      image: quay.io/invalid/image
-      command: [\"sleep\", \"3600\"]
-"
-
-  apply_and_log "2" "hostPath volume" "$ns" "
-apiVersion: v1
-kind: Pod
-metadata:
-  name: test-hostpath
-spec:
+  automountServiceAccountToken: false
   containers:
     - name: test
       image: docker.io/library/busybox
       command: [\"sleep\", \"3600\"]
+      resources:
+        requests:
+          cpu: \"10m\"
+          memory: \"16Mi\"
+        limits:
+          cpu: \"100m\"
+          memory: \"64Mi\"
+      securityContext:
+        readOnlyRootFilesystem: true
+"
+run_and_check "Poprawny Pod – powinien przejść" "$GOOD_POD" "no"
+
+# 2. Zły rejestr
+BAD_REGISTRY_POD="
+apiVersion: v1
+kind: Pod
+metadata:
+  name: invalid-registry
+spec:
+  automountServiceAccountToken: false
+  containers:
+    - name: test
+      image: quay.io/invalid/image
+      command: [\"sleep\", \"3600\"]
+      resources:
+        requests:
+          cpu: \"10m\"
+          memory: \"16Mi\"
+        limits:
+          cpu: \"100m\"
+          memory: \"64Mi\"
+      securityContext:
+        readOnlyRootFilesystem: true
+"
+run_and_check "Niezatwierdzony rejestr" "$BAD_REGISTRY_POD" "yes"
+
+# 3. hostPath
+BAD_HOSTPATH_POD="
+apiVersion: v1
+kind: Pod
+metadata:
+  name: invalid-hostpath
+spec:
+  automountServiceAccountToken: false
+  containers:
+    - name: test
+      image: docker.io/library/busybox
+      command: [\"sleep\", \"3600\"]
+      resources:
+        requests:
+          cpu: \"10m\"
+          memory: \"16Mi\"
+        limits:
+          cpu: \"100m\"
+          memory: \"64Mi\"
+      securityContext:
+        readOnlyRootFilesystem: true
       volumeMounts:
         - name: hostpath-vol
           mountPath: /host
@@ -51,43 +117,78 @@ spec:
       hostPath:
         path: /etc
 "
+run_and_check "hostPath" "$BAD_HOSTPATH_POD" "yes"
 
-  apply_and_log "3" "Brak resource requests/limits" "$ns" "
+# 4. Brak resource limits
+NO_RESOURCES_POD="
 apiVersion: v1
 kind: Pod
 metadata:
-  name: test-no-resources
+  name: invalid-noresources
 spec:
+  automountServiceAccountToken: false
   containers:
     - name: test
       image: docker.io/library/busybox
       command: [\"sleep\", \"3600\"]
-"
-
-  apply_and_log "4" "readOnlyRootFilesystem = false" "$ns" "
-apiVersion: v1
-kind: Pod
-metadata:
-  name: test-readonly-false
-spec:
-  containers:
-    - name: test
-      image: docker.io/library/busybox
       securityContext:
-        readOnlyRootFilesystem: false
-      command: [\"sleep\", \"3600\"]
+        readOnlyRootFilesystem: true
 "
+run_and_check "Brak resource requests/limits" "$NO_RESOURCES_POD" "yes"
 
-  apply_and_log "5" "automountServiceAccountToken = true" "$ns" "
+# 5. Brak readOnlyRootFilesystem
+NO_READONLY_POD="
 apiVersion: v1
 kind: Pod
 metadata:
-  name: test-serviceaccount-token
+  name: invalid-noreadonly
+spec:
+  automountServiceAccountToken: false
+  containers:
+    - name: test
+      image: docker.io/library/busybox
+      command: [\"sleep\", \"3600\"]
+      resources:
+        requests:
+          cpu: \"10m\"
+          memory: \"16Mi\"
+        limits:
+          cpu: \"100m\"
+          memory: \"64Mi\"
+"
+run_and_check "Brak readOnlyRootFilesystem" "$NO_READONLY_POD" "yes"
+
+# 6. automountServiceAccountToken włączone
+BAD_AUTOMOUNT_POD="
+apiVersion: v1
+kind: Pod
+metadata:
+  name: invalid-automount
 spec:
   automountServiceAccountToken: true
   containers:
     - name: test
       image: docker.io/library/busybox
       command: [\"sleep\", \"3600\"]
+      resources:
+        requests:
+          cpu: \"10m\"
+          memory: \"16Mi\"
+        limits:
+          cpu: \"100m\"
+          memory: \"64Mi\"
+      securityContext:
+        readOnlyRootFilesystem: true
 "
+run_and_check "automountServiceAccountToken = true" "$BAD_AUTOMOUNT_POD" "yes"
+
+# --- CLEANUP ---
+print_test "Sprzątanie podów..."
+kubectl delete pod valid-pod invalid-registry invalid-hostpath invalid-noresources invalid-noreadonly invalid-automount -n "$NAMESPACE" --wait=false >/dev/null 2>&1
+
+# --- SUMMARY ---
+print_test "PODSUMOWANIE"
+for k in "${!SUMMARY[@]}"; do
+  echo -e "${SUMMARY[$k]}\t$k"
 done
+echo -e "\nRazem: \033[0;32m$OK OK\033[0m, \033[0;31m$FAIL błędów\033[0m"
