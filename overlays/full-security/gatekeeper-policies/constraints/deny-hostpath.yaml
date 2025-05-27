@@ -1,9 +1,13 @@
 apiVersion: constraints.gatekeeper.sh/v1beta1
-kind: K8sNoHostPath
+kind: K8sPSPHostFilesystem
 metadata:
   name: deny-hostpath
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
 spec:
   match:
     kinds:
       - apiGroups: [""]
         kinds: ["Pod"]
+  parameters:
+    allowedHostPaths: []
