@@ -1,4 +1,2 @@
 resources:
   - ../native-only
-  - namespace-patches/calico-system.yaml
-  - namespace-patches/falco-system.yaml
