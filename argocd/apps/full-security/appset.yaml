@@ -15,7 +15,10 @@ spec:
             wave: "1"
           - name: namespace-patches
             path: overlays/full-security/namespace-patches
-            wave: "3"
+            wave: "1"
+          - name: falco
+            path: overlays/full-security/falco
+            wave: "1"
   template:
     metadata:
       name: '{{name}}'

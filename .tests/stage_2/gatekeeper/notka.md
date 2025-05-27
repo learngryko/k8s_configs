@@ -1,3 +1,4 @@
+
 # 🔐 Gatekeeper – reguły bezpieczeństwa (Maj 2025 – aktualizacja)
 
 ### ✅ Stan wdrożenia:
@@ -31,8 +32,8 @@ elements:
 **Status:** Synced ✅
 
 ### ✅ 2. Tylko zatwierdzone rejestry obrazów – `K8sAllowedRepos`
-**Opis:** Pozwala używać tylko obrazów z określonych rejestrów ( docker.io/library, docker.io).  
-**Cel:** Blokada przypadkowych/publicznych obrazów z poza dockerhub.  
+**Opis:** Pozwala używać tylko obrazów z określonych rejestrów (docker.io/library, docker.io).  
+**Cel:** Blokada przypadkowych/publicznych obrazów spoza dockerhub.  
 **Źródło Template:** [OPA Gatekeeper Library – allowedrepos](https://github.com/open-policy-agent/gatekeeper-library/tree/master/library/general/allowedrepos)  
 **Status:** Synced ✅
 
@@ -53,6 +54,41 @@ elements:
 **Cel:** Ochrona przed eksfiltracją tokenów i eskalacją uprawnień.  
 **Źródło Template:** [OPA Gatekeeper Library – automount-serviceaccount-token](https://github.com/open-policy-agent/gatekeeper-library/tree/master/library/pod-security-policy/automountserviceaccounttoken)  
 **Status:** Synced ✅
+
+---
+
+## 🧪 Wyniki testów – Maj 2025
+
+```
+Test: Poprawny Pod – powinien przejść
+✅ Pod utworzony prawidłowo
+
+Test: Niezatwierdzony rejestr
+✅ Oczekiwany błąd: polityka działa
+
+Test: hostPath
+✅ Oczekiwany błąd: polityka działa
+
+Test: Brak resource requests/limits
+✅ Oczekiwany błąd: polityka działa
+
+Test: Brak readOnlyRootFilesystem
+✅ Oczekiwany błąd: polityka działa
+
+Test: automountServiceAccountToken = true
+✅ Oczekiwany błąd: polityka działa
+
+---
+**PODSUMOWANIE**
+✅      automountServiceAccountToken = true  
+✅      Poprawny Pod – powinien przejść  
+✅      Brak readOnlyRootFilesystem  
+✅      hostPath  
+✅      Brak resource requests/limits  
+✅      Niezatwierdzony rejestr  
+
+Razem: 6 OK, 0 błędów
+```
 
 ---
 
@@ -96,4 +132,7 @@ overlays/full-security/
 
 ---
 
-📅 **Status na Maj 2025: Gatekeeper aktywnie egzekwuje 5 reguł bezpieczeństwa. Instalacja stabilna, konfiguracja zgodna z Argo CD i GitOps. Gotowe na przyszłe rozszerzenia.**
+📅 **Status na Maj 2025:**  
+Gatekeeper aktywnie egzekwuje 5 reguł bezpieczeństwa. Wszystkie testy przeszły poprawnie (6/6 OK). Instalacja stabilna, konfiguracja zgodna z Argo CD i GitOps. Gotowe na przyszłe rozszerzenia.
+
+---
