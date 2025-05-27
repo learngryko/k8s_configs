@@ -1,0 +1,12 @@
+- macro: allowed_k8s_api_connections
+  condition: >
+    proc.name in (system-upgrade-, calico-typha, snapshot-contro)
+
+- rule: Unexpected K8s API Connection (custom)
+  desc: Detect unexpected K8s API server access, excluding known good ones
+  condition: >
+    outbound and fd.sip.name = k8s-api and not allowed_k8s_api_connections
+  output: >
+    Unexpected K8s API connection (proc.name=%proc.name user=%user.name container=%container.id image=%container.image.repository)
+  priority: NOTICE
+  tags: [k8s, network, custom]

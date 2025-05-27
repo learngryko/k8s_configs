@@ -2,4 +2,4 @@ resources:
   - namespace.yaml
   - rbac.yaml
   - falco.yaml
-  - falco-service.yaml
+  - rules/known.yaml
