@@ -8,6 +8,6 @@ spec:
       - apiGroups: [""]
         kinds: ["Pod"]
   parameters:
-    allowedRegistries:
-      - "registry.mycorp.local"
-      - "ghcr.io/org/"
+    allowedRepos:
+      - "docker.io/library/"
+      - "docker.io/"   
