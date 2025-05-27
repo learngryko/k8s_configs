@@ -1,9 +1,7 @@
 apiVersion: constraints.gatekeeper.sh/v1beta1
-kind: K8sReadonlyRootFS
+kind: K8sPSPReadOnlyRootFilesystem
 metadata:
   name: readonly-rootfs
-  annotations:
-    argocd.argoproj.io/sync-wave: "1"
 spec:
   match:
     kinds:

@@ -1,9 +1,7 @@
 apiVersion: constraints.gatekeeper.sh/v1beta1
-kind: K8sApprovedRegistries
+kind: K8sAllowedRepos
 metadata:
   name: approved-registries
-  annotations:
-    argocd.argoproj.io/sync-wave: "1"
 spec:
   match:
     kinds:

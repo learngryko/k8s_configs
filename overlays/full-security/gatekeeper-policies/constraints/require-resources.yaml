@@ -1,9 +1,7 @@
 apiVersion: constraints.gatekeeper.sh/v1beta1
 kind: K8sRequireResources
 metadata:
-  name: require-resources
-  annotations:
-    argocd.argoproj.io/sync-wave: "1"
+  name: K8sRequiredResources
 spec:
   match:
     kinds:
