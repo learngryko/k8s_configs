@@ -1,3 +1,2 @@
 resources:
-  - k8spsphostfilesystem-template.yaml
   - deny-hostpath.yaml
