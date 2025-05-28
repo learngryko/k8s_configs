@@ -6,6 +6,7 @@ spec:
   template:
     spec:
       hostPID: true
+      serviceAccountName: kube-bench
       containers:
         - name: kube-bench
           image: aquasec/kube-bench:latest

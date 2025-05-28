@@ -5,6 +5,7 @@ metadata:
 spec:
   template:
     spec:
+      serviceAccountName: kube-bench
       containers:
         - name: kube-score
           image: zegl/kube-score:latest

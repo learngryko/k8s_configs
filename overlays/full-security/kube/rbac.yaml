@@ -1,0 +1,25 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: kube-bench-reader
+  namespace: security-scan
+rules:
+  - apiGroups: [""]
+    resources: ["nodes", "namespaces"]
+    verbs: ["get", "list"]
+  - nonResourceURLs: ["/version"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: kube-bench-binding
+  namespace: security-scan
+subjects:
+  - kind: ServiceAccount
+    name: kube-bench
+    namespace: security-scan
+roleRef:
+  kind: Role
+  name: kube-bench-reader
+  apiGroup: rbac.authorization.k8s.io
