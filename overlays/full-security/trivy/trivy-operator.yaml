@@ -6,7 +6,7 @@ metadata:
 spec:
   project: security-project
   source:
-    repoURL: https://aquasecurity.github.io/helm-charts/
+    repoURL: https://aquasecurity.github.io/helm-charts
     chart: trivy-operator
     targetRevision: latest
     helm:
