@@ -23,7 +23,7 @@ spec:
             memory: 128Mi
         podSecurityContext:
           readOnlyRootFilesystem: true
-        automountServiceAccountToken: false
+        automountServiceAccountToken: true
   destination:
     server: https://kubernetes.default.svc
     namespace: trivy-system
