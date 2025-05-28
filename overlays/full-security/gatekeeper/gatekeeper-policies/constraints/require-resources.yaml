@@ -10,6 +10,7 @@ spec:
     excludedNamespaces:
       - falco
       - trivy-system 
+      - argocd
   parameters:
     limits:
       - cpu
