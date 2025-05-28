@@ -2,7 +2,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   name: trivy-operator
-  namespace: argocd
+  namespace: argocd  # ArgoCD manages the app from here
 spec:
   project: security-project
   source:
@@ -26,7 +26,7 @@ spec:
         automountServiceAccountToken: false
   destination:
     server: https://kubernetes.default.svc
-    namespace: argocd
+    namespace: trivy-system
   syncPolicy:
     automated:
       prune: true
