@@ -386,6 +386,10 @@ spec:
               readOnly: true
             - mountPath: /etc/falco/config.d
               name: specialized-falco-configs
+            - name: custom-rules
+              mountPath: /etc/falco/rules.d/known.yaml
+              subPath: known.yaml
+              readOnly: true
           env:
             - name: HOST_ROOT
               value: /host
@@ -461,6 +465,9 @@ spec:
             items:
             - key: falco.yaml
               path: falco.yaml
+        - name: custom-rules
+          configMap:
+            name: falco-rules-custom
 
   updateStrategy:
     type: RollingUpdate
