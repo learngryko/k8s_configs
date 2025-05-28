@@ -9,6 +9,7 @@ spec:
         elements:
           - name: fullserurity-base
             path: overlays/full-security
+            namespace: default
             wave: "0"
           - name: gatekeeper-core
             path: overlays/full-security/gatekeeper/gatekeeper-core
@@ -24,7 +25,6 @@ spec:
             wave: "3"
           - name: trivy-operator
             namespace: trivy-system
-            type: helm
             wave: "4"
   template:
     metadata:
@@ -33,13 +33,18 @@ spec:
         argocd.argoproj.io/sync-wave: '{{wave}}'
     spec:
       project: security-project
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: '{{namespace}}'
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
       source:
-        repoURL: https://github.com/learngryko/k8s_configs
-        targetRevision: main
-        path: '{{path}}'
-        {{- if eq .type "helm" }}
-        chart: trivy-operator
+        {{- if eq "{{name}}" "trivy-operator" }}
         repoURL: https://aquasecurity.github.io/helm-charts
+        chart: trivy-operator
+        targetRevision: latest
         helm:
           releaseName: trivy-operator
           values: |
@@ -55,11 +60,8 @@ spec:
             podSecurityContext:
               readOnlyRootFilesystem: true
             automountServiceAccountToken: false
+        {{- else }}
+        repoURL: https://github.com/learngryko/k8s_configs
+        targetRevision: main
+        path: '{{path}}'
         {{- end }}
-      destination:
-        server: https://kubernetes.default.svc
-        namespace: '{{namespace}}'
-      syncPolicy:
-        automated:
-          prune: true
-          selfHeal: true
