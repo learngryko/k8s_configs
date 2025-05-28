@@ -1,0 +1,2 @@
+resources:
+  - trivy-operator.yaml

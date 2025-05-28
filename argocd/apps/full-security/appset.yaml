@@ -23,17 +23,9 @@ spec:
             namespace: falco
             wave: "3"
           - name: trivy-operator
-            namespace: trivy-system
+            path: overlays/full-security/trivy
+            namespace: argocd
             wave: "4"
-            source:
-              repoURL: https://aquasecurity.github.io/helm-charts/
-              chart: trivy-operator
-              targetRevision: "0.28.1"
-              helm:
-                releaseName: trivy-operator
-                values: |
-                  trivy:
-                    ignoreUnfixed: true
   template:
     metadata:
       name: '{{name}}'
