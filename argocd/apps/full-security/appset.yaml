@@ -24,7 +24,7 @@ spec:
             wave: "3"
           - name: trivy-operator
             path: overlays/full-security/trivy
-            namespace: trivy-system
+            namespace: argocd
             wave: "4"
 
   template:
