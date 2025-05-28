@@ -9,25 +9,45 @@ spec:
         elements:
           - name: fullserurity-base
             path: overlays/full-security
+            namespace: default
             wave: "0"
+            source:
+              repoURL: https://github.com/learngryko/k8s_configs
+              path: overlays/full-security
+              targetRevision: main
           - name: gatekeeper-core
             path: overlays/full-security/gatekeeper/gatekeeper-core
             namespace: gatekeeper-system
             wave: "1"
+            source:
+              repoURL: https://github.com/learngryko/k8s_configs
+              path: overlays/full-security/gatekeeper/gatekeeper-core
+              targetRevision: main
           - name: gatekeeper-policies
             path: overlays/full-security/gatekeeper/gatekeeper-policies
             namespace: gatekeeper-system
             wave: "2"
+            source:
+              repoURL: https://github.com/learngryko/k8s_configs
+              path: overlays/full-security/gatekeeper/gatekeeper-policies
+              targetRevision: main
           - name: falco
             path: overlays/full-security/falco
             namespace: falco
             wave: "3"
+            source:
+              repoURL: https://github.com/learngryko/k8s_configs
+              path: overlays/full-security/falco
+              targetRevision: main
           - name: trivy-operator
-            chart: trivy-operator
-            repoURL: https://aquasecurity.github.io/helm-charts/
-            targetRevision: latest
             namespace: trivy-system
             wave: "4"
+            source:
+              chart: trivy-operator
+              repoURL: https://aquasecurity.github.io/helm-charts/
+              targetRevision: latest
+              helm:
+                releaseName: trivy-operator
   template:
     metadata:
       name: '{{name}}'
@@ -35,12 +55,7 @@ spec:
         argocd.argoproj.io/sync-wave: '{{wave}}'
     spec:
       project: security-project
-      source:
-        repoURL: '{{repoURL}}'
-        chart: '{{chart}}'
-        targetRevision: '{{targetRevision}}'
-        helm:
-          releaseName: trivy-operator
+      source: '{{source}}'  # overridden per app
       destination:
         server: https://kubernetes.default.svc
         namespace: '{{namespace}}'
