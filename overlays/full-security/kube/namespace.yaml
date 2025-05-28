@@ -4,4 +4,4 @@ metadata:
   name: security-scan
   labels:
     name: security-scan
-    pod-security.kubernetes.io/enforce: "restricted"
+    pod-security.kubernetes.io/enforce: "baseline"
