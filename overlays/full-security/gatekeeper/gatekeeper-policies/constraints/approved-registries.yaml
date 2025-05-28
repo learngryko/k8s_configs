@@ -14,3 +14,4 @@ spec:
       - "docker.io/library/"
       - "docker.io/"   
       - "ghcr.io/aquasecurity/"
+      - "quay.io/argoproj/"
