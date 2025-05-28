@@ -1,10 +1,9 @@
-apiVersion: v1
-kind: ConfigMap
+apiVersion: argoproj.io/v1alpha1
+kind: Repository
 metadata:
-  name: repositories
+  name: aquasecurity
   namespace: argocd
-data:
-  aquasecurity-helm-repo: |
-    url: https://aquasecurity.github.io/helm-charts/
-    name: aquasecurity
-    type: helm
+spec:
+  type: helm
+  name: aquasecurity
+  url: https://aquasecurity.github.io/helm-charts/
