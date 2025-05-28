@@ -7,7 +7,7 @@ spec:
   description: "All security-related overlays"
   sourceRepos:
     - https://github.com/learngryko/k8s_configs
-    - https://aquasecurity.github.io/helm-charts/
+    - https://aquasecurity.github.io/helm-charts
   destinations:
     - namespace: '*'
       server: https://kubernetes.default.svc
