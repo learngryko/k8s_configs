@@ -1,0 +1,29 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: kube-bench
+spec:
+  template:
+    spec:
+      hostPID: true
+      containers:
+        - name: kube-bench
+          image: aquasec/kube-bench:latest
+          command: ["sh", "-c", "kube-bench --json > /output/kube-bench-report.json"]
+          volumeMounts:
+            - name: etc-kubernetes
+              mountPath: /etc/kubernetes
+            - name: var-lib-etcd
+              mountPath: /var/lib/etcd
+            - name: output
+              mountPath: /output
+      restartPolicy: Never
+      volumes:
+        - name: etc-kubernetes
+          hostPath:
+            path: /etc/kubernetes
+        - name: var-lib-etcd
+          hostPath:
+            path: /var/lib/etcd
+        - name: output
+          emptyDir: {}

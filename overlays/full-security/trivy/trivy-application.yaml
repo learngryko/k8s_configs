@@ -36,8 +36,6 @@ spec:
           requests:
             cpu: 100m
             memory: 128Mi
-        podSecurityContext:
-          readOnlyRootFilesystem: true
   destination:
     server: https://kubernetes.default.svc
     namespace: trivy-system

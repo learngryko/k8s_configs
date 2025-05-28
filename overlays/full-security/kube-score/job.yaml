@@ -1,0 +1,23 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: kube-score
+spec:
+  template:
+    spec:
+      containers:
+        - name: kube-score
+          image: zegl/kube-score:latest
+          command: ["sh", "-c", "kube-score score /yamls --output-format=json > /output/kube-score-report.json"]
+          volumeMounts:
+            - name: yamls
+              mountPath: /yamls
+            - name: output
+              mountPath: /output
+      restartPolicy: Never
+      volumes:
+        - name: yamls
+          configMap:
+            name: kube-score-yamls
+        - name: output
+          emptyDir: {}
