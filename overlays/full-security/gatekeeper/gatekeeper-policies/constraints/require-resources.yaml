@@ -9,6 +9,7 @@ spec:
         kinds: ["Pod"]
     excludedNamespaces:
       - falco
+      - trivy-system 
   parameters:
     limits:
       - cpu
