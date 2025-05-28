@@ -28,11 +28,11 @@ spec:
             namespace: trivy-system
             wave: "4"
           - name: kube-bench
-            path: overlays/full-security/kube-bench
+            path: overlays/full-security/kube/kube-bench
             namespace: security-scan
             wave: "5"
           - name: kube-score
-            path: overlays/full-security/kube-score
+            path: overlays/full-security/kube/kube-score
             namespace: security-scan
             wave: "6"
   template:
