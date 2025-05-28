@@ -24,6 +24,7 @@ spec:
             wave: "3"
           - name: trivy-operator
             namespace: trivy-system
+            type: helm
             wave: "4"
   template:
     metadata:
@@ -33,9 +34,12 @@ spec:
     spec:
       project: security-project
       source:
-        repoURL: https://aquasecurity.github.io/helm-charts
+        repoURL: https://github.com/learngryko/k8s_configs
+        targetRevision: main
+        path: '{{path}}'
+        {{- if eq .type "helm" }}
         chart: trivy-operator
-        targetRevision: latest
+        repoURL: https://aquasecurity.github.io/helm-charts
         helm:
           releaseName: trivy-operator
           values: |
@@ -51,6 +55,7 @@ spec:
             podSecurityContext:
               readOnlyRootFilesystem: true
             automountServiceAccountToken: false
+        {{- end }}
       destination:
         server: https://kubernetes.default.svc
         namespace: '{{namespace}}'
