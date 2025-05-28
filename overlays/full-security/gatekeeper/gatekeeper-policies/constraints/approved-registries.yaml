@@ -13,3 +13,4 @@ spec:
     repos:
       - "docker.io/library/"
       - "docker.io/"   
+      - "ghcr.io/aquasecurity/"
