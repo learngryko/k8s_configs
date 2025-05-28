@@ -14,6 +14,11 @@ spec:
       values: |
         trivy:
           ignoreUnfixed: true
+        operator:
+          image:
+            registry: ghcr.io
+            repository: aquasecurity/trivy-operator
+            tag: 0.28.1
         resources:
           limits:
             cpu: 200m
