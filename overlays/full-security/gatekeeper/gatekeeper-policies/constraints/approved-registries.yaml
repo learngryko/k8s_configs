@@ -12,6 +12,7 @@ spec:
   parameters:
     repos:
       - "docker.io/library/"
-      - "docker.io/"   
+      - "docker.io/"
       - "ghcr.io/aquasecurity/"
       - "quay.io/argoproj/"
+      - "mirror.gcr.io/aquasec/"
