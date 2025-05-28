@@ -22,6 +22,10 @@ spec:
             path: overlays/full-security/falco
             namespace: falco
             wave: "3"
+          - name: trivy-operator
+            path: overlays/full-security/trivy
+            namespace: trivy-system
+            wave: "4"
   template:
     metadata:
       name: '{{name}}'
