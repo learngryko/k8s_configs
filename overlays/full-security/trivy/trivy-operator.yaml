@@ -1,23 +1,20 @@
-apiVersion: argoproj.io/v1alpha1
-kind: Application
+apiVersion: apps/v1
+kind: Deployment
 metadata:
   name: trivy-operator
-  namespace: argocd
+  namespace: trivy-system
 spec:
-  project: security-project
-  source:
-    repoURL: https://aquasecurity.github.io/helm-charts/
-    chart: trivy-operator
-    targetRevision: "0.28.1"
-    helm:
-      releaseName: trivy-operator
-      values: |
-        trivy:
-          ignoreUnfixed: true
-  destination:
-    server: https://kubernetes.default.svc
-    namespace: trivy-system
-  syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
+  replicas: 1
+  selector:
+    matchLabels:
+      app: trivy-operator
+  template:
+    metadata:
+      labels:
+        app: trivy-operator
+    spec:
+      containers:
+        - name: trivy-operator
+          image: ghcr.io/aquasecurity/trivy-operator:0.28.1
+          args:
+            - "--trivy.ignore-unfixed=true"
