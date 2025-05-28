@@ -1,6 +1,25 @@
 - macro: allowed_k8s_api_connections
   condition: >
-    proc.name in (calico-typha, snapshot-controller, system-upgrade-controller, argocd-server)
+    (proc.name in (
+      calico-typha,
+      calico,
+      calico-ipam,
+      snapshot-controller,
+      system-upgrade-controller,
+      argocd-server,
+      falcoctl,
+      fleetagent,
+      agent
+    )
+    and container.image.repository in (
+      "docker.io/calico/typha",
+      "docker.io/calico/cni",
+      "docker.io/falcosecurity/falcoctl",
+      "rancher/fleet-agent",
+      "rancher/system-upgrade-controller",
+      "argoproj/argocd"
+    ))
+    or k8s.ns.name in (kube-system, falco)
 
 - rule: Unexpected K8s API Connection (custom)
   desc: Detect unexpected K8s API server access, excluding known good ones
