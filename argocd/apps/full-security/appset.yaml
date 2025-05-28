@@ -26,6 +26,7 @@ spec:
             path: overlays/full-security/trivy
             namespace: trivy-system
             wave: "4"
+
   template:
     metadata:
       name: '{{name}}'
