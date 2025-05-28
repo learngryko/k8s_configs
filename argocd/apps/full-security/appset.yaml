@@ -23,10 +23,8 @@ spec:
             namespace: falco
             wave: "3"
           - name: trivy-operator
-            path: overlays/full-security/trivy
             namespace: trivy-system
             wave: "4"
-
   template:
     metadata:
       name: '{{name}}'
@@ -35,9 +33,24 @@ spec:
     spec:
       project: security-project
       source:
-        repoURL: https://github.com/learngryko/k8s_configs
-        targetRevision: main
-        path: '{{path}}'
+        repoURL: https://aquasecurity.github.io/helm-charts
+        chart: trivy-operator
+        targetRevision: latest
+        helm:
+          releaseName: trivy-operator
+          values: |
+            trivy:
+              ignoreUnfixed: true
+            resources:
+              limits:
+                cpu: 200m
+                memory: 256Mi
+              requests:
+                cpu: 100m
+                memory: 128Mi
+            podSecurityContext:
+              readOnlyRootFilesystem: true
+            automountServiceAccountToken: false
       destination:
         server: https://kubernetes.default.svc
         namespace: '{{namespace}}'
