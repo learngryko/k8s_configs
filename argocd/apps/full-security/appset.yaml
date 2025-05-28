@@ -48,18 +48,18 @@ spec:
               targetRevision: latest
               helm:
                 releaseName: trivy-operator
-  template:
-    metadata:
-      name: '{{name}}'
-      annotations:
-        argocd.argoproj.io/sync-wave: '{{wave}}'
-    spec:
-      project: security-project
-      source: '{{source}}'  # overridden per app
-      destination:
-        server: https://kubernetes.default.svc
-        namespace: '{{namespace}}'
-      syncPolicy:
-        automated:
-          prune: true
-          selfHeal: true
+template:
+  metadata:
+    name: '{{name}}'
+    annotations:
+      argocd.argoproj.io/sync-wave: '{{wave}}'
+  spec:
+    project: security-project
+    destination:
+      server: https://kubernetes.default.svc
+      namespace: '{{namespace}}'
+    syncPolicy:
+      automated:
+        prune: true
+        selfHeal: true
+
