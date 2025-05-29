@@ -19,5 +19,5 @@ subjects:
     namespace: security-scan
 roleRef:
   kind: ClusterRole
-  name: kube
+  name: kube-reader
   apiGroup: rbac.authorization.k8s.io
