@@ -47,7 +47,7 @@ spec:
           args:
             - |
               score_out=$(find /repo/argocd/apps -name kustomization.yaml | xargs kube-score score --output-format=json)
-              echo "$score_out" > /repo/score.json
+              echo "$score_out" | tee /repo/score.json
           volumeMounts:
             - name: repo
               mountPath: /repo
