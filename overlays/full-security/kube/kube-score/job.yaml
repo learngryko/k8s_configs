@@ -1,70 +1,67 @@
 apiVersion: batch/v1
-kind: CronJob
+kind: Job
 metadata:
   name: kube-score
   namespace: security-scan
+  labels:
+    job-name: kube-score
 spec:
-  schedule: "@hourly"
-  successfulJobsHistoryLimit: 3
-  failedJobsHistoryLimit: 1
-  jobTemplate:
+  ttlSecondsAfterFinished: 300
+  template:
     metadata:
       labels:
         job-name: kube-score
     spec:
-      ttlSecondsAfterFinished: 300
-      template:
-        metadata:
-          labels:
-            job-name: kube-score
-        spec:
-          automountServiceAccountToken: false
-          serviceAccountName: kube-bench
-          restartPolicy: Never
-          containers:
-            - name: git-clone
-              image: docker.io/library/alpine:latest
-              command:
-                - sh
-                - -c
-              args:
-                - |
-                  apk add --no-cache git
-                  git clone --depth=1 https://github.com/learngryko/k8s_configs /repo
-              volumeMounts:
-                - name: repo
-                  mountPath: /repo
-              securityContext:
-                readOnlyRootFilesystem: true
-              resources:
-                requests:
-                  cpu: 50m
-                  memory: 64Mi
-                limits:
-                  cpu: 100m
-                  memory: 128Mi
+      automountServiceAccountToken: false
+      serviceAccountName: kube-bench
+      restartPolicy: Never
 
-            - name: kube-score
-              image: docker.io/zegl/kube-score:latest
-              command:
-                - sh
-                - -c
-              args:
-                - |
-                  score_out=$(find /repo/argocd/apps -name kustomization.yaml | xargs kube-score score --output-format=json)
-                  echo "$score_out" > /repo/score.json
-              volumeMounts:
-                - name: repo
-                  mountPath: /repo
-              securityContext:
-                readOnlyRootFilesystem: true
-              resources:
-                requests:
-                  cpu: 50m
-                  memory: 64Mi
-                limits:
-                  cpu: 100m
-                  memory: 128Mi
-          volumes:
+      initContainers:
+        - name: git-clone
+          image: docker.io/library/alpine:latest
+          command:
+            - sh
+            - -c
+          args:
+            - |
+              apk add --no-cache git
+              git clone --depth=1 https://github.com/learngryko/k8s_configs /repo
+          volumeMounts:
             - name: repo
-              emptyDir: {}
+              mountPath: /repo
+          securityContext:
+            readOnlyRootFilesystem: true
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi
+
+      containers:
+        - name: kube-score
+          image: docker.io/zegl/kube-score:latest
+          command:
+            - sh
+            - -c
+          args:
+            - |
+              score_out=$(find /repo/argocd/apps -name kustomization.yaml | xargs kube-score score --output-format=json)
+              echo "$score_out" > /repo/score.json
+          volumeMounts:
+            - name: repo
+              mountPath: /repo
+          securityContext:
+            readOnlyRootFilesystem: true
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi
+
+      volumes:
+        - name: repo
+          emptyDir: {}
