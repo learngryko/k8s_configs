@@ -46,8 +46,13 @@ spec:
             - -c
           args:
             - |
-              score_out=$(find /repo/argocd/apps -name kustomization.yaml | xargs kube-score score --output-format=json)
-              echo "$score_out" | tee /repo/score.json
+              FILES=$(find /repo -name kustomization.yaml)
+              if [ -z "$FILES" ]; then
+                echo "❌ No kustomization.yaml files found"
+                exit 1
+              fi
+              kube-score score --output-format=json $FILES
+
           volumeMounts:
             - name: repo
               mountPath: /repo
