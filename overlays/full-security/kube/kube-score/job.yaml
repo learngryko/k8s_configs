@@ -4,7 +4,13 @@ metadata:
   name: kube-score
   namespace: security-scan
 spec:
+  selector:
+    matchLabels:
+      job: kube-score
   template:
+    metadata:
+      labels:
+        job: kube-score
     spec:
       serviceAccountName: kube-bench
       restartPolicy: Never
