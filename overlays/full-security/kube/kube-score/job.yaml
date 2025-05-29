@@ -18,7 +18,7 @@ spec:
       restartPolicy: Never
       initContainers:
         - name: git-clone
-          image: alpine/git
+          image: docker.io/bitnami/git:latest 
           command:
             - sh
             - -c
