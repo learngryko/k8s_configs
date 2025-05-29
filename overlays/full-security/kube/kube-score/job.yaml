@@ -3,72 +3,35 @@ kind: Job
 metadata:
   name: kube-score
   namespace: security-scan
-  labels:
-    job-name: kube-score
 spec:
-  ttlSecondsAfterFinished: 300
-  backoffLimit: 0
-  selector:
-    matchLabels:
-      job-name: kube-score
   template:
-    metadata:
-      labels:
-        job-name: kube-score
     spec:
-      automountServiceAccountToken: false
-      serviceAccountName: kube-bench
       restartPolicy: Never
-      initContainers:
-        - name: git-clone
-          image: docker.io/bitnami/git:latest
-          command:
-            - sh
-            - -c
-          args:
-            - |
-              git clone --depth=1 https://github.com/learngryko/k8s_configs /repo
-          volumeMounts:
-            - name: repo
-              mountPath: /repo
-          securityContext:
-            readOnlyRootFilesystem: false
-          resources:
-            requests:
-              cpu: 50m
-              memory: 64Mi
-            limits:
-              cpu: 100m
-              memory: 128Mi
-
+      serviceAccountName: kube
       containers:
         - name: kube-score
-          image: docker.io/zegl/kube-score:latest
+          image: alpine:latest
           command:
-            - sh
+            - /bin/sh
             - -c
-          args:
             - |
-              FILES=$(find /repo -name kustomization.yaml)
-              if [ -z "$FILES" ]; then
-                echo "❌ No kustomization.yaml files found in /repo"
-                ls -R /repo
-                exit 1
-              fi
-              kube-score score --output-format=json $FILES
-          volumeMounts:
-            - name: repo
-              mountPath: /repo
+              apk add --no-cache git curl && \
+              git clone --depth=1 https://github.com/learngryko/k8s_configs /repo && \
+              curl -L https://github.com/zegl/kube-score/releases/latest/download/kube-score-linux-amd64 -o /usr/local/bin/kube-score && \
+              chmod +x /usr/local/bin/kube-score && \
+              kube-score score /repo --output-format json
           securityContext:
             readOnlyRootFilesystem: false
+            runAsNonRoot: true
+            runAsUser: 1000
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
           resources:
             requests:
-              cpu: 50m
-              memory: 64Mi
-            limits:
               cpu: 100m
               memory: 128Mi
-
-      volumes:
-        - name: repo
-          emptyDir: {}
+            limits:
+              cpu: 200m
+              memory: 256Mi

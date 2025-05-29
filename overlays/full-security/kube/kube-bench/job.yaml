@@ -8,7 +8,7 @@ spec:
     spec:
       hostPID: false
       automountServiceAccountToken: true
-      serviceAccountName: kube-bench
+      serviceAccountName: kube
       restartPolicy: Never
       containers:
         - name: kube-bench

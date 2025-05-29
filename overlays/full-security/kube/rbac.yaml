@@ -1,7 +1,7 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: kube-bench-reader
+  name: kube-reader
 rules:
   - apiGroups: [""]
     resources: ["nodes", "namespaces"]
@@ -12,12 +12,12 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: kube-bench-binding
+  name: kube-binding
 subjects:
   - kind: ServiceAccount
-    name: kube-bench
+    name: kube
     namespace: security-scan
 roleRef:
   kind: ClusterRole
-  name: kube-bench-reader
+  name: kube
   apiGroup: rbac.authorization.k8s.io
