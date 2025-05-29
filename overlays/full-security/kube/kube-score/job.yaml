@@ -17,9 +17,10 @@ spec:
             - |
               apk add --no-cache git && \
               git clone --depth=1 https://github.com/learngryko/k8s_configs /repo && \
-              find /repo -name '*.yaml' -o -name '*.yml' | while read file; do
-                kube-score score "$file" --output-format json || true
-              done
+              ulimit -n 4096 && \
+              find /repo -name '*.yaml' -o -name '*.yml' | \
+                xargs kube-score score --output-format json > /tmp/score.json || true; \
+              cat /tmp/score.json
           securityContext:
             runAsUser: 0
             allowPrivilegeEscalation: false
