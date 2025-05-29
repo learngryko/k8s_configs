@@ -39,7 +39,7 @@ spec:
                   memory: 128Mi
 
             - name: kube-score
-              image: ghcr.io/zegl/kube-score:latest
+              image: docker.io/zegl/kube-score:latest
               command: ["sh", "-c", "kube-score score /repo/argocd/apps/**/overlays/**/kustomization.yaml --output-format=json"]
               volumeMounts:
                 - name: repo
