@@ -10,15 +10,12 @@ spec:
       serviceAccountName: kube
       containers:
         - name: kube-score
-          image: docker.io/bitnami/git:latest
+          image: docker.io/zegl/kube-score:latest
           command:
             - /bin/sh
             - -c
             - |
-              apt-get update && \
-              apt-get install -y curl && \
-              curl -L https://github.com/zegl/kube-score/releases/latest/download/kube-score-linux-amd64 -o /usr/local/bin/kube-score && \
-              chmod +x /usr/local/bin/kube-score && \
+              apk add --no-cache git && \
               git clone --depth=1 https://github.com/learngryko/k8s_configs /repo && \
               kube-score score /repo --output-format json
           securityContext:
