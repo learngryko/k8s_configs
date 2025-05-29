@@ -7,7 +7,10 @@ metadata:
     job-name: kube-score
 spec:
   ttlSecondsAfterFinished: 300
-  backoffLimit: 0 
+  backoffLimit: 0
+  selector:
+    matchLabels:
+      job-name: kube-score
   template:
     metadata:
       labels:
@@ -18,7 +21,7 @@ spec:
       restartPolicy: Never
       initContainers:
         - name: git-clone
-          image: docker.io/bitnami/git:latest 
+          image: docker.io/bitnami/git:latest
           command:
             - sh
             - -c
@@ -29,7 +32,7 @@ spec:
             - name: repo
               mountPath: /repo
           securityContext:
-            readOnlyRootFilesystem: false 
+            readOnlyRootFilesystem: false
           resources:
             requests:
               cpu: 50m
@@ -53,12 +56,11 @@ spec:
                 exit 1
               fi
               kube-score score --output-format=json $FILES
-
           volumeMounts:
             - name: repo
               mountPath: /repo
           securityContext:
-            readOnlyRootFilesystem: false 
+            readOnlyRootFilesystem: false
           resources:
             requests:
               cpu: 50m
