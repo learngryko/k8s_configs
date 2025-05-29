@@ -12,7 +12,7 @@ spec:
       restartPolicy: Never
       containers:
         - name: kube-bench
-          image: ghcr.io/aquasecurity/kube-bench:latest
+          image: docker.io/aquasec/kube-bench:latest
           command: ["kube-bench", "--json"]
           securityContext:
             readOnlyRootFilesystem: true
