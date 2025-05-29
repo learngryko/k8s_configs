@@ -6,7 +6,7 @@ metadata:
 spec:
   template:
     spec:
-      hostPID: true
+      hostPID: false 
       automountServiceAccountToken: false
       serviceAccountName: kube-bench
       restartPolicy: Never
@@ -16,6 +16,11 @@ spec:
           command: ["kube-bench", "--json"]
           securityContext:
             readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
           resources:
             requests:
               cpu: 100m
@@ -23,15 +28,3 @@ spec:
             limits:
               cpu: 200m
               memory: 256Mi
-          volumeMounts:
-            - name: etc-kubernetes
-              mountPath: /etc/kubernetes
-            - name: var-lib-etcd
-              mountPath: /var/lib/etcd
-      volumes:
-        - name: etc-kubernetes
-          hostPath:
-            path: /etc/kubernetes
-        - name: var-lib-etcd
-          hostPath:
-            path: /var/lib/etcd
