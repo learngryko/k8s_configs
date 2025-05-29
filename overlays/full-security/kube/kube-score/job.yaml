@@ -15,10 +15,11 @@ spec:
             - /bin/sh
             - -c
             - |
-              apk add --no-cache git curl && \
-              git clone --depth=1 https://github.com/learngryko/k8s_configs /repo && \
+              apt-get update && \
+              apt-get install -y curl && \
               curl -L https://github.com/zegl/kube-score/releases/latest/download/kube-score-linux-amd64 -o /usr/local/bin/kube-score && \
               chmod +x /usr/local/bin/kube-score && \
+              git clone --depth=1 https://github.com/learngryko/k8s_configs /repo && \
               kube-score score /repo --output-format json
           securityContext:
             runAsUser: 0
