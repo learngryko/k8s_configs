@@ -7,6 +7,7 @@ metadata:
     job-name: kube-score
 spec:
   ttlSecondsAfterFinished: 300
+  backoffLimit: 0 
   template:
     metadata:
       labels:
@@ -15,16 +16,14 @@ spec:
       automountServiceAccountToken: false
       serviceAccountName: kube-bench
       restartPolicy: Never
-
       initContainers:
         - name: git-clone
-          image: docker.io/library/alpine:latest
+          image: alpine/git
           command:
             - sh
             - -c
           args:
             - |
-              apk add --no-cache git
               git clone --depth=1 https://github.com/learngryko/k8s_configs /repo
           volumeMounts:
             - name: repo
