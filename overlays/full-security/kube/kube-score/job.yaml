@@ -15,16 +15,11 @@ spec:
             - /bin/sh
             - -c
             - |
-              apk add --no-cache git jq && \
+              apk add --no-cache git && \
               git clone --depth=1 https://github.com/learngryko/k8s_configs /repo && \
-              ulimit -n 4096 && \
-              TMPFILE=$(mktemp) && \
-              find /repo -name '*.yaml' -o -name '*.yml' > "$TMPFILE" && \
-              ( \
-                while read -r file; do \
-                  kube-score score "$file" --output-format json 2>/dev/null || true; \
-                done < "$TMPFILE" \
-              ) | grep -E '^\s*{' | jq -s '.'
+              find /repo -name '*.yaml' -o -name '*.yml' | while read file; do
+                kube-score score "$file" --output-format json || true
+              done
           securityContext:
             runAsUser: 0
             allowPrivilegeEscalation: false
