@@ -10,7 +10,7 @@ spec:
       containers:
         - name: kube-bench
           image: aquasec/kube-bench:latest
-          command: ["sh", "-c", "kube-bench --json > /output/kube-bench-report.json"]
+          command: ["kube-bench", "--json"]
           volumeMounts:
             - name: etc-kubernetes
               mountPath: /etc/kubernetes
