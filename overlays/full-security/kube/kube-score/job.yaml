@@ -1,37 +1,40 @@
 apiVersion: batch/v1
-kind: Job
+kind: CronJob
 metadata:
   name: kube-score
   namespace: security-scan
 spec:
-  selector:
-    matchLabels:
-      job: kube-score
-  template:
-    metadata:
-      labels:
-        job: kube-score
+  schedule: "@hourly"  # możesz zmienić np. na */10 * * * * dla co 10 minut
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 1
+  jobTemplate:
     spec:
-      serviceAccountName: kube-bench
-      restartPolicy: Never
-      containers:
-        - name: git-clone
-          image: alpine/git
-          command: ["sh", "-c", "git clone --depth=1 https://github.com/learngryko/k8s_configs /repo"]
-          volumeMounts:
-            - name: repo
-              mountPath: /repo
+      ttlSecondsAfterFinished: 300
+      template:
+        metadata:
+          labels:
+            job: kube-score
+        spec:
+          serviceAccountName: kube-bench
+          restartPolicy: Never
+          containers:
+            - name: git-clone
+              image: alpine/git
+              command: ["sh", "-c", "git clone --depth=1 https://github.com/learngryko/k8s_configs /repo"]
+              volumeMounts:
+                - name: repo
+                  mountPath: /repo
 
-        - name: kube-score
-          image: zegl/kube-score:latest
-          command: ["sh", "-c", "kube-score score /repo/argocd/apps/**/overlays/**/kustomization.yaml --output-format=json > /output/kube-score-report.json"]
-          volumeMounts:
+            - name: kube-score
+              image: zegl/kube-score:latest
+              command: ["sh", "-c", "kube-score score /repo/argocd/apps/**/overlays/**/kustomization.yaml --output-format=json > /output/kube-score-report.json"]
+              volumeMounts:
+                - name: repo
+                  mountPath: /repo
+                - name: output
+                  mountPath: /output
+          volumes:
             - name: repo
-              mountPath: /repo
+              emptyDir: {}
             - name: output
-              mountPath: /output
-      volumes:
-        - name: repo
-          emptyDir: {}
-        - name: output
-          emptyDir: {}
+              emptyDir: {}
