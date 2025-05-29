@@ -2,23 +2,30 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: kube-score
+  namespace: security-scan
 spec:
   template:
     spec:
       serviceAccountName: kube-bench
+      restartPolicy: Never
       containers:
+        - name: git-clone
+          image: alpine/git
+          command: ["sh", "-c", "git clone --depth=1 https://github.com/learngryko/k8s_configs /repo"]
+          volumeMounts:
+            - name: repo
+              mountPath: /repo
+
         - name: kube-score
           image: zegl/kube-score:latest
-          command: ["sh", "-c", "kube-score score /yamls --output-format=json > /output/kube-score-report.json"]
+          command: ["sh", "-c", "kube-score score /repo/argocd/apps/**/overlays/**/kustomization.yaml --output-format=json > /output/kube-score-report.json"]
           volumeMounts:
-            - name: yamls
-              mountPath: /yamls
+            - name: repo
+              mountPath: /repo
             - name: output
               mountPath: /output
-      restartPolicy: Never
       volumes:
-        - name: yamls
-          configMap:
-            name: kube-score-yamls
+        - name: repo
+          emptyDir: {}
         - name: output
           emptyDir: {}
