@@ -38,10 +38,10 @@ spec:
             value: "1024"
           - name: fs.inotify.max_user_watches
             value: "1048576"
-        resources:
-          requests:
-            cpu: 100m
-            memory: 128Mi
-          limits:
-            cpu: 200m
-            memory: 256Mi
+      resources:
+        requests:
+          cpu: 100m
+          memory: 128Mi
+        limits:
+          cpu: 200m
+          memory: 256Mi
