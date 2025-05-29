@@ -2,23 +2,32 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: kube-bench
+  namespace: security-scan
 spec:
   template:
     spec:
       hostPID: true
+      automountServiceAccountToken: false
       serviceAccountName: kube-bench
+      restartPolicy: Never
       containers:
         - name: kube-bench
-          image: aquasec/kube-bench:latest
+          image: ghcr.io/aquasecurity/kube-bench:latest
           command: ["kube-bench", "--json"]
+          securityContext:
+            readOnlyRootFilesystem: true
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
           volumeMounts:
             - name: etc-kubernetes
               mountPath: /etc/kubernetes
             - name: var-lib-etcd
               mountPath: /var/lib/etcd
-            - name: output
-              mountPath: /output
-      restartPolicy: Never
       volumes:
         - name: etc-kubernetes
           hostPath:
@@ -26,5 +35,3 @@ spec:
         - name: var-lib-etcd
           hostPath:
             path: /var/lib/etcd
-        - name: output
-          emptyDir: {}

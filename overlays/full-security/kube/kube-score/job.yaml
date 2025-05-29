@@ -4,7 +4,7 @@ metadata:
   name: kube-score
   namespace: security-scan
 spec:
-  schedule: "@hourly"  # możesz zmienić np. na */10 * * * * dla co 10 minut
+  schedule: "@hourly"
   successfulJobsHistoryLimit: 3
   failedJobsHistoryLimit: 1
   jobTemplate:
@@ -15,26 +15,41 @@ spec:
           labels:
             job: kube-score
         spec:
+          automountServiceAccountToken: false
           serviceAccountName: kube-bench
           restartPolicy: Never
           containers:
             - name: git-clone
-              image: alpine/git
+              image: docker.io/library/alpine:latest
               command: ["sh", "-c", "git clone --depth=1 https://github.com/learngryko/k8s_configs /repo"]
               volumeMounts:
                 - name: repo
                   mountPath: /repo
+              securityContext:
+                readOnlyRootFilesystem: true
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 64Mi
+                limits:
+                  cpu: 100m
+                  memory: 128Mi
 
             - name: kube-score
-              image: zegl/kube-score:latest
+              image: ghcr.io/zegl/kube-score:latest
               command: ["sh", "-c", "kube-score score /repo/argocd/apps/**/overlays/**/kustomization.yaml --output-format=json"]
               volumeMounts:
                 - name: repo
                   mountPath: /repo
-                - name: output
-                  mountPath: /output
+              securityContext:
+                readOnlyRootFilesystem: true
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 64Mi
+                limits:
+                  cpu: 100m
+                  memory: 128Mi
           volumes:
             - name: repo
-              emptyDir: {}
-            - name: output
               emptyDir: {}
