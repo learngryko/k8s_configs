@@ -18,8 +18,13 @@ spec:
               apk add --no-cache git jq && \
               git clone --depth=1 https://github.com/learngryko/k8s_configs /repo && \
               ulimit -n 4096 && \
-              find /repo -name '*.yaml' -o -name '*.yml' > /tmp/yamls.txt && \
-              jq -s '.' <(xargs -a /tmp/yamls.txt kube-score score --output-format json || true)
+              TMPFILE=$(mktemp) && \
+              find /repo -name '*.yaml' -o -name '*.yml' > "$TMPFILE" && \
+              ( \
+                while read -r file; do \
+                  kube-score score "$file" --output-format json || true; \
+                done < "$TMPFILE" \
+              ) | jq -s '.' 
           securityContext:
             runAsUser: 0
             allowPrivilegeEscalation: false
