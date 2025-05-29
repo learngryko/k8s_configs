@@ -22,9 +22,9 @@ spec:
               find /repo -name '*.yaml' -o -name '*.yml' > "$TMPFILE" && \
               ( \
                 while read -r file; do \
-                  kube-score score "$file" --output-format json || true; \
+                  kube-score score "$file" --output-format json 2>/dev/null || true; \
                 done < "$TMPFILE" \
-              ) | jq -s '.' 
+              ) | grep -E '^\s*{' | jq -s '.'
           securityContext:
             runAsUser: 0
             allowPrivilegeEscalation: false
