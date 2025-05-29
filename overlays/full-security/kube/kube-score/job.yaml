@@ -10,7 +10,7 @@ spec:
       serviceAccountName: kube
       containers:
         - name: kube-score
-          image: alpine:latest
+          image: docker.io/bitnami/git:latest
           command:
             - /bin/sh
             - -c
