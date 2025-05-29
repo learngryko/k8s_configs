@@ -16,3 +16,4 @@ spec:
       - "ghcr.io/aquasecurity/"
       - "quay.io/argoproj/"
       - "mirror.gcr.io/aquasec/"
+      - "docker.io/bitnami/"
