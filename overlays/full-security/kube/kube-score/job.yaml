@@ -7,7 +7,7 @@ spec:
   template:
     spec:
       restartPolicy: Never
-      serviceAccountName: kube
+      serviceAccountName: kube-bench
       containers:
         - name: kube-score
           image: alpine:latest
@@ -21,9 +21,7 @@ spec:
               chmod +x /usr/local/bin/kube-score && \
               kube-score score /repo --output-format json
           securityContext:
-            readOnlyRootFilesystem: false
-            runAsNonRoot: true
-            runAsUser: 1000
+            runAsUser: 0
             allowPrivilegeEscalation: false
             capabilities:
               drop:
