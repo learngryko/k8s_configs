@@ -7,7 +7,7 @@ spec:
   template:
     spec:
       restartPolicy: Never
-      serviceAccountName: kube-bench
+      serviceAccountName: kube
       containers:
         - name: kube-score
           image: alpine:latest
