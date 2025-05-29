@@ -48,7 +48,8 @@ spec:
             - |
               FILES=$(find /repo -name kustomization.yaml)
               if [ -z "$FILES" ]; then
-                echo "❌ No kustomization.yaml files found"
+                echo "❌ No kustomization.yaml files found in /repo"
+                ls -R /repo
                 exit 1
               fi
               kube-score score --output-format=json $FILES
