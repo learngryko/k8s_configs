@@ -15,7 +15,7 @@ spec:
             - /bin/sh
             - -c
             - |
-              apk add --no-cache git && \
+              apk add --no-cache git jq && \
               git clone --depth=1 https://github.com/learngryko/k8s_configs /repo && \
               ulimit -n 4096 && \
               find /repo -name '*.yaml' -o -name '*.yml' > /tmp/yamls.txt && \
