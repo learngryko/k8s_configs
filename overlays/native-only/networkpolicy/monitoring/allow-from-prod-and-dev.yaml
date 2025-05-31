@@ -20,4 +20,3 @@ spec:
         - namespaceSelector:
             matchLabels:
               kubernetes.io/metadata.name: dev   # allow from 'dev' namespace
-      # allow all ports/protocols from these namespaces (edit if want restrict)
