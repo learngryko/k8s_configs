@@ -8,9 +8,6 @@ spec:
     spec:
       restartPolicy: Never
       serviceAccountName: kube
-      volumes:
-        - name: output
-          emptyDir: {}
       containers:
         - name: kube-score
           image: docker.io/zegl/kube-score:latest
@@ -20,10 +17,7 @@ spec:
             - |
               git clone --depth=1 https://github.com/learngryko/k8s_configs /repo && \
               find /repo \( -name '*.yaml' -o -name '*.yml' \) \
-                -exec kube-score score {} --output-format json \; >> /output/report.json
-          volumeMounts:
-            - name: output
-              mountPath: /output
+                -exec kube-score score {} --output-format json \;
           securityContext:
             runAsUser: 0
             allowPrivilegeEscalation: false
@@ -37,10 +31,3 @@ spec:
             limits:
               cpu: 200m
               memory: 256Mi
-
-        - name: sleeper
-          image: busybox
-          command: ["sh", "-c", "sleep 3600"]
-          volumeMounts:
-            - name: output
-              mountPath: /output
