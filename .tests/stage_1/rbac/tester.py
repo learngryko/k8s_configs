@@ -1,6 +1,45 @@
 import subprocess
+import sys
 
-# Test cases
+CAN_I_YAML = """
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: can-i-checker
+rules:
+- apiGroups: ["authorization.k8s.io"]
+  resources: ["selfsubjectaccessreviews"]
+  verbs: ["create"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: can-i-checker-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: can-i-checker
+subjects:
+- kind: User
+  name: user-viewer
+- kind: User
+  name: user-dev
+- kind: User
+  name: user-ops
+"""
+
+def apply_rbac():
+    # apply the RBAC yaml for selfsubjectaccessreviews
+    proc = subprocess.run(["kubectl", "apply", "-f", "-"], input=CAN_I_YAML.encode(), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    if proc.returncode != 0:
+        print("Failed to apply can-i RBAC:", proc.stderr.decode())
+        sys.exit(2)
+
+def delete_rbac():
+    # delete temporary RBAC resources
+    subprocess.run(["kubectl", "delete", "clusterrole", "can-i-checker"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    subprocess.run(["kubectl", "delete", "clusterrolebinding", "can-i-checker-binding"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
 tests = [
     # user-viewer (read-only everywhere)
     ("user-viewer", "dev", "get pods", True),
@@ -61,5 +100,9 @@ def run_test(user, namespace, action, should_pass):
 
 if __name__ == "__main__":
     print("🔍 RBAC Health Check\n--------------------")
-    for test in tests:
-        run_test(*test)
+    apply_rbac()
+    try:
+        for test in tests:
+            run_test(*test)
+    finally:
+        delete_rbac()
